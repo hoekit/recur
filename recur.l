@@ -1,5 +1,4 @@
 %{
-
 #include <stdio.h>
 #include <string.h>
 #include "recur.tab.h"
@@ -7,16 +6,14 @@ void showError();
 %}
 
 
-numbers     ([0-9])+
-alpha       ([a-zA-Z])+
+uday        ([1-7])
+
 
 %%
-
-{alpha}			   {sscanf(yytext, "%s", yylval.name); return (STRING);}
-{numbers}      {yylval.number = atoi(yytext); return (NUM);}
-";"      		   {return (SEMICOLON);}
-.      		     {showError(); return(OTHER);}
-
+"u"             {return (UEEK);}
+{uday}          {yylval.uday = atoi(yytext); return (UDAY);}
+","             {return (SEP);}
+.               {showError(); return(OTHER);}
 %%
 
 
