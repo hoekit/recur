@@ -13,6 +13,8 @@ int d1,d2,h1;
 
 int md1(int wday);  // Return number of days to next recur given wday
 int md2(int wday);  // Return number of days to next next recur given wday
+int mh1(int wday);  // Return hour of next recur given wday
+int new_d(int d, int md);   // Determine new d given md
 
 %}
 
@@ -60,8 +62,14 @@ loop:
                     break;
                 yyerror("1");
             }
-            printf("md1: %d\n",md1(wday));
-            printf("md2: %d\n",md2(wday));
+
+
+            // Update d1, d2 and h1
+            d1 = new_d(d1, md1(wday));
+            d2 = new_d(d2, md2(wday));
+            h1 = new_d(h1, mh1(wday));
+            // printf("md1:%d mh2:%d mh1:%d\n", md1(wday),md2(wday), mh1(wday));
+            printf(" d1:%d  d2:%d  h1:%d\n",d1,d2,h1);
         }
         | OTHER
 ;
@@ -81,6 +89,18 @@ int md2(int wday)   // Return number of days to next next recur given wday
 {
     return md1(wday) + 7;
 }
+int mh1(int wday)   // Return hour of next recur given wday
+{
+    return 0;
+}
+int new_d(int d, int md)    // Determine new d given md
+{
+    if (d == -1) {
+        return md;
+    } else {
+        return d < md ? d : md;
+    }
+}
 
 
 int main()
@@ -88,11 +108,11 @@ int main()
     // Initialize d1, d2 and h1
     d1 = d2 = h1 = -1;
 
-    current_time = (time_t)1611415429;  // Mock Sat Jan 23 22:25:02 2021
+    current_time = (time_t)1611380990;  // Mock Sat Jan 23 12:49:39 2021
     // current_time = time(NULL);
 
     local_time = localtime(&current_time);
-    printf("Local wday: %d\n", local_time->tm_wday);
+    printf("Local wday:%d hour:%d\n",local_time->tm_wday,local_time->tm_hour);
 
     yyparse();
     return 0;
