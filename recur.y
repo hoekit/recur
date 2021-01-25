@@ -18,12 +18,14 @@ int new_d(int d, int md);   // Determine new d given md
 
 %}
 
-%token UEEK UDAY OTHER SEP
+%token UEEK UDAY H HOUR OTHER SEP
 
 %type <uday> UDAY
+%type <hour> HOUR
 
 %union{
     int uday;
+    int hour;
 }
 
 %%
@@ -70,6 +72,9 @@ loop:
             h1 = new_d(h1, mh1(wday));
             // printf("md1:%d mh2:%d mh1:%d\n", md1(wday),md2(wday), mh1(wday));
             printf(" d1:%d  d2:%d  h1:%d\n",d1,d2,h1);
+        }
+        | H HOUR {
+            printf("Every hour at: %d", $2);
         }
         | OTHER
 ;
