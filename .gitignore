@@ -7,3 +7,5 @@ recur
 # Skip static library files
 lib*.a
 
+# Skip generated tags file
+tags
