@@ -1,2 +1,9 @@
 # Skip generated binary
 recur
+
+# Skip object files
+*.o
+
+# Skip static library files
+lib*.a
+
