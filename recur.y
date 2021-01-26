@@ -18,14 +18,18 @@ int new_d(int d, int md);   // Determine new d given md
 
 %}
 
-%token UEEK UDAY H HOUR OTHER SEP
+%token UVAL DVAL HVAL YVAL OTHER SEP
 
-%type <uday> UDAY
-%type <hour> HOUR
+%type <uval> UVAL
+%type <dval> DVAL
+%type <hval> HVAL
+%type <yval> YVAL
 
 %union{
-    int uday;
-    int hour;
+    int uval;
+    int dval;
+    int hval;
+    char *yval;
 }
 
 %%
@@ -35,11 +39,29 @@ prog:
 ;
 
 loops:
-        | loop loops SEP loops
+        loop | loop loops | loop SEP loops
 
 loop:
-        UEEK UDAY {
-            wday = $2 - 1;
+        hexps rexp {
+            // A loop is found here so update the next struct here
+            // printf("Found a loop\n");
+        }
+
+hexps:
+        | hexp hexps
+
+hexp:   HVAL {
+            printf("Every hour at: %d\n", $1);
+        }
+
+rexp:
+        uexp | dexp | yexp
+
+uexp:
+        UVAL {
+            printf("Handle uexp: u%d\n", $1);
+
+            wday = $1 - 1;
             switch(wday) {
                 case 0:
                     printf("Every Monday\n");
@@ -65,18 +87,22 @@ loop:
                 yyerror("1");
             }
 
-
             // Update d1, d2 and h1
             d1 = new_d(d1, md1(wday));
             d2 = new_d(d2, md2(wday));
-            h1 = new_d(h1, mh1(wday));
             // printf("md1:%d mh2:%d mh1:%d\n", md1(wday),md2(wday), mh1(wday));
             printf(" d1:%d  d2:%d  h1:%d\n",d1,d2,h1);
         }
-        | H HOUR {
-            printf("Every hour at: %d", $2);
+
+dexp:
+        DVAL {
+            printf("Handle dexp: d%d\n", $1);
         }
-        | OTHER
+
+yexp:
+        YVAL {
+            printf("Handle yexp: y%s\n", $1);
+        }
 ;
 
 %%
@@ -113,8 +139,8 @@ int main()
     // Initialize d1, d2 and h1
     d1 = d2 = h1 = -1;
 
-    current_time = (time_t)1611380990;  // Mock Sat Jan 23 12:49:39 2021
-    // current_time = time(NULL);
+    // current_time = (time_t)1611380990;  // Mock Sat Jan 23 12:49:39 2021
+    current_time = time(NULL);
 
     local_time = localtime(&current_time);
     printf("Local wday:%d hour:%d\n",local_time->tm_wday,local_time->tm_hour);
