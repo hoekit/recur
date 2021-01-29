@@ -7,19 +7,12 @@ int yylex();
 int yyerror(char *s);
 
 time_t current_time;
-struct tm* local_time;
 int next_hh[3] = {-1,-1,-1};
 int next_mm[2] = {-1,-1};
 int next_tm[2] = {-1,-1};
 int next_dy[2] = {-1,-1};
 
-int wday;
-int d1,d2,h1;
-
-int md1(int wday);  // Return number of days to next recur given wday
-int md2(int wday);  // Return number of days to next next recur given wday
-int mh1(int wday);  // Return hour of next recur given wday
-int new_d(int d, int md);   // Determine new d given md
+time_t dt_to_epoch(int dy, int tm); // Compute epoch of given dy and tm
 
 %}
 
@@ -30,6 +23,7 @@ int new_d(int d, int md);   // Determine new d given md
 %type <hval> HVAL
 %type <mval> MVAL
 %type <yval> YVAL
+%type <epoch> loops loop
 
 %union{
     int uval;
@@ -37,91 +31,70 @@ int new_d(int d, int md);   // Determine new d given md
     int hval;
     int mval;
     char *yval;
+    struct { int dy; int tm; } epoch;
 }
 
 %%
 
-prog:
+input:
   loops {
-    printf("loops\n");
-  }
+        printf("%ld\n", dt_to_epoch($1.dy,$1.tm));
+    }
 ;
 
 loops:
-        loop | loop loops | loop SEP loops
+  loop              { $$.dy = 1; $$.tm = 1; }
+| loop loops        { $$.dy = 1; $$.tm = 2; }
+| loop SEP loops    { $$.dy = 1; $$.tm = 3; }
+;
 
 loop:
-        texps rexp {
-            // A loop is found here so update the next struct here
-            // printf("Found a loop\n");
-        }
+  texps rexp {
+    // A loop is found here so update the next struct here
+    // printf("Found a loop\n");
+  }
+;
 
 texps:
-        | hexps | hexps mexps
+  %empty
+| hexps
+| hexps mexps
+;
 
 hexps:
-        hexp | hexp hexps
+  hexp
+| hexp hexps
+;
 
-hexp:   HVAL {
-            printf("Every hour at: %d\n", $1);
-        }
+hexp:
+  HVAL  { printf("Every hour at: %d\n", $1); }
+;
 
 mexps:
-        mexp | mexp mexps
+  mexp
+| mexp mexps
+;
 
-mexp:   MVAL {
-            printf("Every minute at: %d\n", $1);
-        }
+mexp:
+  MVAL  { printf("Every minute at: %d\n", $1); }
+;
 
 rexp:
-        uexp | dexp | yexp
+  uexp
+| dexp
+| yexp
+;
 
 uexp:
-        UVAL {
-            printf("Handle uexp: u%d\n", $1);
-
-            wday = $1 - 1;
-            switch(wday) {
-                case 0:
-                    printf("Every Monday\n");
-                    break;
-                case 1:
-                    printf("Every Tuesday\n");
-                    break;
-                case 2:
-                    printf("Every Wednesday\n");
-                    break;
-                case 3:
-                    printf("Every Thursday\n");
-                    break;
-                case 4:
-                    printf("Every Friday\n");
-                    break;
-                case 5:
-                    printf("Every Saturday\n");
-                    break;
-                case 6:
-                    printf("Every Sunday\n");
-                    break;
-                yyerror("1");
-            }
-
-            // Update d1, d2 and h1
-            d1 = new_d(d1, md1(wday));
-            d2 = new_d(d2, md2(wday));
-            // printf("md1:%d mh2:%d mh1:%d\n", md1(wday),md2(wday), mh1(wday));
-            printf(" d1:%d  d2:%d  h1:%d\n",d1,d2,h1);
-        }
+  UVAL  { printf("Handle uexp: u%d\n", $1); }
+;
 
 dexp:
-        DVAL {
-            printf("Handle dexp: d%d\n", $1);
-        }
+  DVAL  { printf("Handle dexp: d%d\n", $1); }
+;
 
 yexp:
-        YVAL {
-            printf("Handle yexp: y%s\n", $1);
-        }
+  YVAL  { printf("Handle yexp: y%s\n", $1); }
 ;
 
 %%
@@ -131,39 +104,36 @@ int yyerror(char *s)
     printf("Syntax Error on line %s\n", s);
     return 0;
 }
-int md1(int wday)   // Return number of days to next recur given wday
+
+
+
+time_t epoch_add_dt(time_t epoch, int dy, int tm)
 {
-    return (wday + 8 - local_time->tm_wday) % 7;
+    // Create localtime struct from current_time
+    struct tm *lc_time = localtime(&epoch);
+
+    // Force lc_time to start of today
+    lc_time->tm_sec = lc_time->tm_min = lc_time->tm_hour = 0;
+
+    // Convert lc_time back to epoch and add on dy and tm
+    return mktime(lc_time) + dy*24*60*60 + tm;
 }
-int md2(int wday)   // Return number of days to next next recur given wday
+time_t dt_to_epoch(int dy, int tm)  // Compute epoch of given dy and tm
 {
-    return md1(wday) + 7;
-}
-int mh1(int wday)   // Return hour of next recur given wday
-{
-    return 0;
-}
-int new_d(int d, int md)    // Determine new d given md
-{
-    if (d == -1) {
-        return md;
-    } else {
-        return d < md ? d : md;
-    }
+    return epoch_add_dt(current_time, dy, tm);
 }
 
 
 int main()
 {
-    // Initialize d1, d2 and h1
-    d1 = d2 = h1 = -1;
+    printf("\n");
 
     // current_time = (time_t)1611380990;  // Mock Sat Jan 23 12:49:39 2021
     current_time = time(NULL);
 
-    local_time = localtime(&current_time);
-    printf("Local wday:%d hour:%d\n",local_time->tm_wday,local_time->tm_hour);
+    printf("Today started at: %ld\n", epoch_add_dt(current_time, 0, 0));
 
     yyparse();
+
     return 0;
 }
