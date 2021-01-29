@@ -6,13 +6,35 @@
 int yylex();
 int yyerror(char *s);
 
+int D = 0;
 time_t current_time;
-int next_hh[3] = {-1,-1,-1};
-int next_mm[2] = {-1,-1};
-int next_tm[2] = {-1,-1};
-int next_dy[2] = {-1,-1};
+struct tm lc[1];     // local time
 
+int next_hh[3] = {-1,-1,-1};
+int next_mm[2] =
+{
+    -1,     // Earliest mm value earlier than or equal to current minute
+            //   Valid values: -1,0-59
+    -1      // Earliest mm value later than current minute
+            //   Valid values: -1,0-59
+};
+int next_tm[2] =
+{
+    -1,     // earliest time point today in seconds. Valid: -1, 0-86400
+    -1      // earliest time point other days in seconds. Valid: -1, 0-86400
+};
+int next_dy[2] =
+{
+    -1,
+    -1
+};
+
+typedef struct { int dy; int tm; } Next;
+Next next = { -1, -1 };
+
+// HELPER FUNCTIONS
 time_t dt_to_epoch(int dy, int tm); // Compute epoch of given dy and tm
+void reval(int *curr, int val);     // Re-evaluate *curr given val
 
 %}
 
@@ -43,15 +65,15 @@ input:
 ;
 
 loops:
-  loop              { $$.dy = 1; $$.tm = 1; }
-| loop loops        { $$.dy = 1; $$.tm = 2; }
-| loop SEP loops    { $$.dy = 1; $$.tm = 3; }
+  loop              { printf("loops:1\n"); $$.dy = 1; $$.tm = 1; }
+| loop loops        { printf("loops:2\n"); $$.dy = 1; $$.tm = 2; }
+| loop SEP loops    { printf("loops:3\n"); $$.dy = 1; $$.tm = 3; }
 ;
 
 loop:
   texps rexp {
     // A loop is found here so update the next struct here
-    // printf("Found a loop\n");
+    printf("  loop\n\n");
   }
 ;
 
@@ -76,7 +98,20 @@ mexps:
 ;
 
 mexp:
-  MVAL  { printf("Every minute at: %d\n", $1); }
+  MVAL {
+    D && printf("On M%d:\n", $1);
+    if ($1 <= lc->tm_min) {
+        D && printf("  M%d is earlier than current min:%d\n", $1, lc->tm_min);
+        D && printf("  Update next_mm[0] from %d to ", next_mm[0]);
+        reval( &next_mm[0], $1 );
+        D && printf("%d\n", next_mm[0]);
+    } else {
+        D && printf("  M%d is later than current min:%d\n", $1, lc->tm_min);
+        D && printf("  Update next_mm[1] from %d to ", next_mm[1]);
+        reval( &next_mm[1], $1 );
+        D && printf("%d\n", next_mm[1]);
+    }
+  }
 ;
 
 rexp:
@@ -122,6 +157,11 @@ time_t dt_to_epoch(int dy, int tm)  // Compute epoch of given dy and tm
 {
     return epoch_add_dt(current_time, dy, tm);
 }
+void reval(int *curr, int val)      // Re-evaluate *curr given val
+{
+    if ((*curr == -1) || (val < *curr))
+        *curr = val;
+}
 
 
 int main()
@@ -130,6 +170,9 @@ int main()
 
     // current_time = (time_t)1611380990;  // Mock Sat Jan 23 12:49:39 2021
     current_time = time(NULL);
+
+    // convert current_time to localtime and store into lc
+    localtime_r(&current_time,lc);
 
     printf("Today started at: %ld\n", epoch_add_dt(current_time, 0, 0));
 
