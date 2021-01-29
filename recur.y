@@ -8,6 +8,11 @@ int yyerror(char *s);
 
 time_t current_time;
 struct tm* local_time;
+int next_hh[3] = {-1,-1,-1};
+int next_mm[2] = {-1,-1};
+int next_tm[2] = {-1,-1};
+int next_dy[2] = {-1,-1};
+
 int wday;
 int d1,d2,h1;
 
@@ -18,40 +23,54 @@ int new_d(int d, int md);   // Determine new d given md
 
 %}
 
-%token UVAL DVAL HVAL YVAL OTHER SEP
+%token UVAL HVAL MVAL DVAL YVAL OTHER SEP
 
 %type <uval> UVAL
 %type <dval> DVAL
 %type <hval> HVAL
+%type <mval> MVAL
 %type <yval> YVAL
 
 %union{
     int uval;
     int dval;
     int hval;
+    int mval;
     char *yval;
 }
 
 %%
 
 prog:
-  loops
+  loops {
+    printf("loops\n");
+  }
 ;
 
 loops:
         loop | loop loops | loop SEP loops
 
 loop:
-        hexps rexp {
+        texps rexp {
             // A loop is found here so update the next struct here
             // printf("Found a loop\n");
         }
 
+texps:
+        | hexps | hexps mexps
+
 hexps:
-        | hexp hexps
+        hexp | hexp hexps
 
 hexp:   HVAL {
             printf("Every hour at: %d\n", $1);
+        }
+
+mexps:
+        mexp | mexp mexps
+
+mexp:   MVAL {
+            printf("Every minute at: %d\n", $1);
         }
 
 rexp:
