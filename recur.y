@@ -20,7 +20,7 @@ int next_mm[2] =
 };
 int next_tm[2] =
 {
-    -1,     // earliest time point today in seconds. Valid: -1, 0-86400
+    -1,     // earliest time point today in seconds.      Valid: -1, 0-86400
     -1      // earliest time point other days in seconds. Valid: -1, 0-86400
 };
 int next_dy[2] =
@@ -35,6 +35,7 @@ Next next = { -1, -1 };
 // HELPER FUNCTIONS
 time_t dt_to_epoch(int dy, int tm); // Compute epoch of given dy and tm
 void reval(int *curr, int val);     // Re-evaluate *curr given val
+void upd_next_tm(int tval);         // Update next_tm given tval
 
 %}
 
@@ -78,9 +79,18 @@ loop:
 ;
 
 texps:
-  %empty
-| hexps
-| hexps mexps
+  %empty {
+    D && printf("On empty texps:\n");
+    D && printf("  Default to 6am.\n");
+    // printf("%d %d %d\n", next_hh[0], next_hh[1], next_hh[2]);
+    upd_next_tm(6*60*60);
+  }
+| hexps {
+    D && printf("On HEXPS:\n");
+  }
+| hexps mexps {
+    D && printf("On HEXPS MEXPS:\n");
+  }
 ;
 
 hexps:
@@ -179,6 +189,27 @@ void reval(int *curr, int val)      // Re-evaluate *curr given val
 {
     if ((*curr == -1) || (val < *curr))
         *curr = val;
+}
+void upd_next_tm(int tval)          // Update next_tm given tval
+{
+    // curr_tm is elapsed time since midnight of current day in seconds
+    int curr_tm = lc->tm_hour*60*60 + lc->tm_min*60 + lc->tm_sec;
+
+    if (tval > curr_tm) {
+        D && printf("  tval:%d is AFTER current time:%d\n",
+            tval, curr_tm);
+        D && printf("    ∴ next recurrence can be today.\n");
+        D && printf("  Update next_tm[0] from %d to ", next_tm[0]);
+        reval( &next_tm[0], tval );
+        D && printf("%d\n", next_tm[0]);
+    }
+
+    // Given a tval, always reval next_tm[1]
+    D && printf("  Given tval:%d, always reval next_tm[1]:%d\n",
+        tval, curr_tm);
+    D && printf("  Value of next_tm[1] -- Before:%d ", next_tm[1]);
+    reval( &next_tm[1], tval );
+    D && printf("After:%d\n", next_tm[1]);
 }
 
 
