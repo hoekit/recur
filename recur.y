@@ -6,7 +6,7 @@
 int yylex();
 int yyerror(char *s);
 
-int D = 0;
+int D = 1;
 time_t current_time;
 struct tm lc[1];     // local time
 
@@ -89,7 +89,25 @@ hexps:
 ;
 
 hexp:
-  HVAL  { printf("Every hour at: %d\n", $1); }
+  HVAL {
+    D && printf("On H%02d:\n", $1);
+    if ($1 < lc->tm_hour) {
+        D && printf("  H%02d is earlier than current hour:%02d\n", $1, lc->tm_hour);
+        D && printf("  Update next_hh[0] from %d to ", next_hh[0]);
+        reval( &next_hh[0], $1 );
+        D && printf("%d\n", next_hh[0]);
+    } else if ($1 == lc->tm_hour) {
+        D && printf("  H%02d is same as current hour:%02d\n", $1, lc->tm_hour);
+        D && printf("  Update next_hh[1] from %d to ", next_hh[1]);
+        reval( &next_hh[1], $1 );
+        D && printf("%d\n", next_hh[1]);
+    } else {
+        D && printf("  H%02d is later than current hour:%02d\n", $1, lc->tm_hour);
+        D && printf("  Update next_hh[2] from %d to ", next_hh[2]);
+        reval( &next_hh[2], $1 );
+        D && printf("%d\n", next_hh[2]);
+    }
+  }
 ;
 
 mexps:
@@ -99,7 +117,7 @@ mexps:
 
 mexp:
   MVAL {
-    D && printf("On M%d:\n", $1);
+    D && printf("On M%02d:\n", $1);
     if ($1 <= lc->tm_min) {
         D && printf("  M%d is earlier than current min:%d\n", $1, lc->tm_min);
         D && printf("  Update next_mm[0] from %d to ", next_mm[0]);
