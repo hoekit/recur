@@ -2,11 +2,11 @@
 %{
 #include <stdio.h>
 #include <time.h>
+#include "helpers.h"
 
 int yylex();
 int yyerror(char *s);
 
-int D = 1;
 time_t current_time;
 struct tm lc[1];     // local time
 
@@ -36,7 +36,7 @@ Next next = { -1, -1 };
 time_t dt_to_epoch(int dy, int tm); // Compute epoch of given dy and tm
 void reval(int *curr, int val);     // Re-evaluate *curr given val
 void upd_next_tm(int tval);         // Update next_tm given tval
-void status();
+void status(char *msg);
 void iter_upd_next_tm();            // Generate possible tval and
                                     //   iteratively update next_tm
 
@@ -57,7 +57,7 @@ void iter_upd_next_tm();            // Generate possible tval and
     int hval;
     int mval;
     char *yval;
-    struct { int dy; int tm; } epoch;
+    struct epoch { int dy; int tm; } epoch;
 }
 
 %%
@@ -69,15 +69,50 @@ input:
 ;
 
 loops:
-  loop              { printf("loops:1\n"); $$.dy = 1; $$.tm = 1; }
-| loop loops        { printf("loops:2\n"); $$.dy = 1; $$.tm = 2; }
-| loop SEP loops    { printf("loops:3\n"); $$.dy = 1; $$.tm = 3; }
+  loop           { D && printf("loops:1\n"); $$.dy = next.dy; $$.tm = next.tm; }
+| loop loops     { D && printf("loops:2\n"); $$.dy = next.dy; $$.tm = next.tm; }
+| loop SEP loops { D && printf("loops:3\n"); $$.dy = next.dy; $$.tm = next.tm; }
 ;
 
 loop:
   texps rexp {
     // A loop is found here so update the next struct here
-    printf("  loop\n\n");
+
+    Next temp = { -1, -1 };
+
+    if (next_dy[0] == 0) {              // Next recurrence can be today
+
+        if (next_tm[0] == -1) {         // But no valid times
+            temp.dy = next_dy[1];       //   So use next, next recurrence
+            temp.tm = next_tm[1];       //     At earliest time
+
+        } else {                        // And a time for today exists
+            temp.dy = 0;                //   So today is next recurrence
+            temp.tm = next_tm[0];       //     At time for today
+        }
+
+    } else {                            // Recurrence tomorrow onwards
+        temp.dy = next_dy[0];           //   So use first recurrence
+        temp.tm = next_tm[1];           //     At earliest time for other days
+    }
+
+    D && printf("  temp.dy:%d temp.tm:%d\n", temp.dy, temp.tm);
+
+    if ((next.dy == -1)                 // Update if not initialized
+        || (temp.dy < next.dy)          //   or temp day is earlier
+        || ((temp.dy == next.dy)        //   or same day
+             && (temp.tm < next.tm))) { //      but temp time is earlier
+        next.dy = temp.dy;
+        next.tm = temp.tm;
+    }
+
+    // Reset helper structs
+    next_hh[0] = next_hh[1] = next_hh[2] = -1;
+    next_mm[0] = next_mm[1] = -1;
+    next_tm[0] = next_tm[1] = -1;
+    next_dy[0] = next_dy[1] = -1;
+
+    status("On loop");
   }
 ;
 
@@ -86,19 +121,19 @@ texps:
     D && printf("On empty texps:\n");
     D && printf("  Default to 6am.\n");
     upd_next_tm(6*60*60);
-    status();
+    status("On texps \%empty");
   }
 | hexps {
     D && printf("On HEXPS only:\n");
     D && printf("  Default minute to 00\n");
     next_mm[0] = 0;
     iter_upd_next_tm();
-    status();
+    status("On texps hexps");
   }
 | hexps mexps {
     D && printf("On HEXPS MEXPS:\n");
     iter_upd_next_tm();
-    status();
+    status("On texps mexps");
   }
 ;
 
@@ -164,22 +199,39 @@ uexp:
     D && printf("  Given wday:%d and lc->tm_wday:%d\n", wday, lc->tm_wday);
     if (wday == lc->tm_wday) {
         D && printf("  Today is the next occurrence\n");
+        reval(&next_dy[1], next_dy[0]);
         reval(&next_dy[0], 0);
     } else {
-        D && printf("  Next occurrence on week day #%d\n", $1);
+        D && printf("  Next occurrence on day of week:%d\n", $1);
+        reval(&next_dy[1], next_dy[0]);
         reval(&next_dy[0], (wday + 7 - lc->tm_wday) % 7);
     }
     reval(&next_dy[1], next_dy[0] + 7);
-    status();
+    status("On uexp");
   }
 ;
 
 dexp:
-  DVAL  { printf("Handle dexp: d%d\n", $1); }
+  DVAL {
+    D && printf("On d%02d:\n", $1);
+    int mday = $1;
+    D && printf("  Given mday:%d and lc->tm_mday:%d\n", mday, lc->tm_mday);
+    if (mday == lc->tm_mday) {
+        D && printf("  Today is the next occurrence\n");
+        reval(&next_dy[1], next_dy[0]);
+        reval(&next_dy[0], 0);
+    } else {
+        D && printf("  Next occurrence on day of month:%d\n", $1);
+        reval(&next_dy[1], next_dy[0]);
+        reval(&next_dy[0], next_mday_days($1,lc));
+    }
+    reval(&next_dy[1], next_next_mday_days($1,lc));
+    status("On dexp");
+  }
 ;
 
 yexp:
-  YVAL  { printf("Handle yexp: y%s\n", $1); }
+  YVAL  { D && printf("Handle yexp: y%s\n", $1); }
 ;
 
 %%
@@ -243,20 +295,23 @@ void iter_upd_next_tm()             // Generate possible tval and
         }
     }
 }
-void status()
+
+void status(char *msg)
 {
-    printf("\nSTATUS:\n");
+    if (!D) return;
+    printf("\nSTATUS: %s\n", msg);
     printf("  next_hh: [ %d %d %d ]\n", next_hh[0], next_hh[1], next_hh[2]);
     printf("  next_mm: [ %d %d ]\n",    next_mm[0], next_mm[1]);
     printf("  next_tm: [ %d %d ]\n",    next_tm[0], next_tm[1]);
     printf("  next_dy: [ %d %d ]\n",    next_dy[0], next_dy[1]);
+    printf("  next   : [ %d %d ]\n",    next.dy,    next.tm);
     printf("\n");
 }
 
 
 int main()
 {
-    printf("\n");
+    D && printf("\n");
 
     // current_time = (time_t)1611380990;  // Mock Sat Jan 23 12:49:39 2021
     current_time = time(NULL);
@@ -264,9 +319,10 @@ int main()
     // convert current_time to localtime and store into lc
     localtime_r(&current_time,lc);
 
-    printf("Today started at: %ld\n", epoch_add_dt(current_time, 0, 0));
+    D && printf("Today started at: %ld\n", epoch_add_dt(current_time, 0, 0));
 
     yyparse();
+    status("At End");
 
     return 0;
 }
