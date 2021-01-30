@@ -60,11 +60,40 @@ void check_mth_days(int yy, int mm, int val)
     sprintf(msg,"mth_days(%d,%2d) == %2d",yy,mm,val);
     is(got,exp,msg);
 }
+void check_next_mday_days(int tgt_mday, int yy, int mm, int dd, int val)
+{
+    struct tm lc[1] = {
+        0,
+        0,
+        0,
+        dd,
+        mm - 1,
+        yy - 1900,
+        0,
+        0
+    };
+
+    char got[10] = "";
+    char exp[10] = "";
+    char msg[80] = "";
+    sprintf(got,"%d", next_mday_days(tgt_mday, lc));
+    sprintf(exp,"%d", val);
+    sprintf(msg,"next_mday_days(%2d,%5d,%2d,%3d) == %2d",tgt_mday,yy,mm,dd,val);
+    is(got,exp,msg);
+}
 
 
 int main(void)
 {
     is("ok","ok","is()");
+    // exit(EXIT_SUCCESS);
+
+    printf("\n next_mday_days()\n");
+    check_next_mday_days(30, 2019, 1, 30,  0);
+    check_next_mday_days(31, 2019, 1, 30,  1);
+    check_next_mday_days(29, 2019, 1, 30, 30);
+    check_next_mday_days(31, 2021, 1, 29,  2);
+    check_next_mday_days(27, 2021, 1, 29, 29);
 
     printf("\n mth_days()\n");
     check_mth_days(2021, 1, 31);        // Month with 31 days
