@@ -6,7 +6,7 @@
 // eom_days(2021, 4,  1) == 29      // Month with 30 days
 // eom_days(2000, 2, 10) == 19      // Feb in leap year
 // eom_days(2009, 2, 10) == 18      // Feb in non-leap year
-int eom_days(struct tm* lc)         // Days to end of current month
+int eom_days(const struct tm* lc)   // Days to end of current month
 {
     if ((lc->tm_mon == 0)           // Months with 31 days
         || (lc->tm_mon == 2)

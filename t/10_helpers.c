@@ -50,19 +50,35 @@ void check_eom_days(int yy, int mm, int dd, int val)
     sprintf(msg,"eom_days(%d,%3d,%3d) == %2d",yy,mm,dd,val);
     is(got,exp,msg);
 }
+void check_mth_days(int yy, int mm, int val)
+{
+    char got[10] = "";
+    char exp[10] = "";
+    char msg[80] = "";
+    sprintf(got,"%d", mth_days(yy,mm));
+    sprintf(exp,"%d", val);
+    sprintf(msg,"mth_days(%d,%2d) == %2d",yy,mm,val);
+    is(got,exp,msg);
+}
 
 
 int main(void)
 {
     is("ok","ok","is()");
 
-    // eom_days()
+    printf("\n mth_days()\n");
+    check_mth_days(2021, 1, 31);        // Month with 31 days
+    check_mth_days(2021, 4, 30);        // Month with 30 days
+    check_mth_days(2000, 2, 29);        // Feb in leap year
+    check_mth_days(2009, 2, 28);        // Feb in non-leap year
+
+    printf("\n eom_days()\n");
     check_eom_days(2021, 1, 30,  1);    // Month with 31 days
     check_eom_days(2021, 4,  1, 29);    // Month with 30 days
     check_eom_days(2000, 2, 10, 19);    // Feb in leap year
     check_eom_days(2009, 2, 10, 18);    // Feb in non-leap year
 
-    // is_leap_year()
+    printf("\n is_leap_year()\n");
     check_leap_year(-100, -1);
     check_leap_year(   0,  1);
     check_leap_year(2021,  0);
