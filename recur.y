@@ -25,8 +25,8 @@ int next_tm[2] =
 };
 int next_dy[2] =
 {
-    -1,
-    -1
+    -1,     // Days to next recurrence. If today, 0. Valid: -1, 0-366
+    -1      // Days to next, next recurrence.        Valid: -1, 1-731
 };
 
 typedef struct { int dy; int tm; } Next;
@@ -158,7 +158,20 @@ rexp:
 ;
 
 uexp:
-  UVAL  { printf("Handle uexp: u%d\n", $1); }
+  UVAL {
+    D && printf("On u%d:\n", $1);
+    int wday = $1 == 7 ? 0 : $1;
+    D && printf("  Given wday:%d and lc->tm_wday:%d\n", wday, lc->tm_wday);
+    if (wday == lc->tm_wday) {
+        D && printf("  Today is the next occurrence\n");
+        reval(&next_dy[0], 0);
+    } else {
+        D && printf("  Next occurrence on week day #%d\n", $1);
+        reval(&next_dy[0], (wday + 7 - lc->tm_wday) % 7);
+    }
+    reval(&next_dy[1], next_dy[0] + 7);
+    status();
+  }
 ;
 
 dexp:
@@ -239,6 +252,7 @@ void status()
     printf("  next_dy: [ %d %d ]\n",    next_dy[0], next_dy[1]);
     printf("\n");
 }
+
 
 int main()
 {
