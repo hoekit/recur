@@ -20,8 +20,8 @@ int next_mm[2] =
 };
 int next_tm[2] =
 {
-    -1,     // earliest time point today in seconds.      Valid: -1, 0-86400
-    -1      // earliest time point other days in seconds. Valid: -1, 0-86400
+    -1,     // Earliest time point today in seconds.      Valid: -1, 0-86400
+    -1      // Earliest time point other days in seconds. Valid: -1, 0-86400
 };
 int next_dy[2] =
 {
@@ -36,6 +36,9 @@ Next next = { -1, -1 };
 time_t dt_to_epoch(int dy, int tm); // Compute epoch of given dy and tm
 void reval(int *curr, int val);     // Re-evaluate *curr given val
 void upd_next_tm(int tval);         // Update next_tm given tval
+void status();
+void iter_upd_next_tm();            // Generate possible tval and
+                                    //   iteratively update next_tm
 
 %}
 
@@ -82,14 +85,20 @@ texps:
   %empty {
     D && printf("On empty texps:\n");
     D && printf("  Default to 6am.\n");
-    // printf("%d %d %d\n", next_hh[0], next_hh[1], next_hh[2]);
     upd_next_tm(6*60*60);
+    status();
   }
 | hexps {
-    D && printf("On HEXPS:\n");
+    D && printf("On HEXPS only:\n");
+    D && printf("  Default minute to 00\n");
+    next_mm[0] = 0;
+    iter_upd_next_tm();
+    status();
   }
 | hexps mexps {
     D && printf("On HEXPS MEXPS:\n");
+    iter_upd_next_tm();
+    status();
   }
 ;
 
@@ -211,7 +220,25 @@ void upd_next_tm(int tval)          // Update next_tm given tval
     reval( &next_tm[1], tval );
     D && printf("After:%d\n", next_tm[1]);
 }
-
+void iter_upd_next_tm()             // Generate possible tval and
+{                                   //   iteratively update next_tm
+    for (int h = 0; h < 3; h++) {
+        if (next_hh[h] == -1) continue;
+        for (int m = 0; m < 2; m++) {
+            if (next_mm[m] == -1) continue;
+            upd_next_tm(next_hh[h]*60*60 + next_mm[m]*60);
+        }
+    }
+}
+void status()
+{
+    printf("\nSTATUS:\n");
+    printf("  next_hh: [ %d %d %d ]\n", next_hh[0], next_hh[1], next_hh[2]);
+    printf("  next_mm: [ %d %d ]\n",    next_mm[0], next_mm[1]);
+    printf("  next_tm: [ %d %d ]\n",    next_tm[0], next_tm[1]);
+    printf("  next_dy: [ %d %d ]\n",    next_dy[0], next_dy[1]);
+    printf("\n");
+}
 
 int main()
 {
