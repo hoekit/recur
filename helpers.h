@@ -1,7 +1,9 @@
 // helpers.h
 #include <time.h>
 
-int D;
+enum {                              // Global Flags
+    D = 0                           //   1: Show debugging messages
+};
 
 int shift(char *str, char *res);
 

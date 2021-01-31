@@ -1,7 +1,6 @@
 
 recurfiles = recur.l recur.y
 default: helpers $(recurfiles)
-	clear
 	flex -l recur.l
 	bison -dv recur.y
 	gcc -o recur recur.tab.c lex.yy.c -L . -lfl -lhelpers
@@ -16,7 +15,7 @@ source: $(srcfiles)
 		shift-one-char.o \
 		is_leap_year.o
 
-helperfiles = src/eom_days.c src/mth_days.c
+helperfiles = src/eom_days.c src/mth_days.c src/next_mday_days.c
 helpers: source $(helperfiles)
 	cd src && gcc -c eom_days.c -I .. -L .. -lhelpers
 	cd src && gcc -c mth_days.c -I .. -L .. -lhelpers
@@ -26,7 +25,8 @@ helpers: source $(helperfiles)
 		src/mth_days.o \
 		src/next_mday_days.o
 
-test: helpers
+testfiles = t/10_helpers.c
+test: helpers $(testfiles)
 	cd t && gcc -o t_helper 10_helpers.c -I .. -L .. -lhelpers
 	t/t_helper
 

@@ -3,8 +3,6 @@
 #include <time.h>       /* struct tm    */
 #include "helpers.h"    /* mth_days     */
 
-int D = 0;
-
 int next_mday_days(int tgt_mday, const struct tm* lc)
                                     // Days to end of current month
 {
