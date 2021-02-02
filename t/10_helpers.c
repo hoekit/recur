@@ -31,13 +31,10 @@ void is(char *got, char *exp, char *msg) {
 }
 void check_leap_year(int year, int val)
 {
-    char got[10] = "";
-    char exp[10] = "";
-    char msg[80] = "";
-    sprintf(got,"%d", is_leap_year(year));
-    sprintf(exp,"%d", val);
-    sprintf(msg,"is_leap_year(%d) == %d",year,val);
-    is(got,exp,msg);
+    sprintf(tgot,"%d", is_leap_year(year));
+    sprintf(texp,"%d", val);
+    sprintf(tmsg,"is_leap_year(%d) == %d",year,val);
+    is(tgot,texp,tmsg);
 }
 void check_eom_days(int yy, int mm, int dd, int val)
 {
@@ -52,57 +49,36 @@ void check_eom_days(int yy, int mm, int dd, int val)
         0
     };
 
-    char got[10] = "";
-    char exp[10] = "";
-    char msg[80] = "";
-    sprintf(got,"%d", eom_days(lc));
-    sprintf(exp,"%d", val);
-    sprintf(msg,"eom_days(%d,%3d,%3d) == %2d",yy,mm,dd,val);
-    is(got,exp,msg);
+    sprintf(tgot,"%d", eom_days(lc));
+    sprintf(texp,"%d", val);
+    sprintf(tmsg,"eom_days(%d,%3d,%3d) == %2d",yy,mm,dd,val);
+    is(tgot,texp,tmsg);
 }
 void check_mth_days(int yy, int mm, int val)
 {
-    char got[10] = "";
-    char exp[10] = "";
-    char msg[80] = "";
-    sprintf(got,"%d", mth_days(yy,mm));
-    sprintf(exp,"%d", val);
-    sprintf(msg,"mth_days(%d,%2d) == %2d",yy,mm,val);
-    is(got,exp,msg);
+    sprintf(tgot,"%d", mth_days(yy,mm));
+    sprintf(texp,"%d", val);
+    sprintf(tmsg,"mth_days(%d,%2d) == %2d",yy,mm,val);
+    is(tgot,texp,tmsg);
 }
 void check_next_mday_days(int tgt_mday, int yy, int mm, int dd, int val)
 {
     struct tm lc[1] = {
-        0,
-        0,
-        0,
-        dd,
-        mm - 1,
-        yy - 1900,
-        0,
-        0
-    };
+        0, 0, 0,
+        dd, mm - 1, yy - 1900,
+        0, 0 };
 
-    char got[10] = "";
-    char exp[10] = "";
-    char msg[80] = "";
-    sprintf(got,"%d", next_mday_days(tgt_mday, lc));
-    sprintf(exp,"%d", val);
-    sprintf(msg,"next_mday_days(%2d,%5d,%3d,%3d) == %2d",tgt_mday,yy,mm,dd,val);
-    is(got,exp,msg);
+    sprintf(tgot,"%d", next_mday_days(tgt_mday, lc));
+    sprintf(texp,"%d", val);
+    sprintf(tmsg,"next_mday_days(%2d,%5d,%3d,%3d) == %2d",tgt_mday,yy,mm,dd,val);
+    is(tgot,texp,tmsg);
 }
 void check_next_next_mday_days(int tgt_mday, int yy, int mm, int dd, int val)
 {
     struct tm lc[1] = {
-        0,
-        0,
-        0,
-        dd,
-        mm - 1,
-        yy - 1900,
-        0,
-        0
-    };
+        0, 0, 0,
+        dd, mm - 1, yy - 1900,
+        0, 0 };
 
     sprintf(tgot,"%d", next_next_mday_days(tgt_mday, lc));
     sprintf(texp,"%d", val);
@@ -199,3 +175,4 @@ int main(void)
     status();
     exit(EXIT_SUCCESS);
 }
+
