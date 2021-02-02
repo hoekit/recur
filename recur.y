@@ -264,9 +264,6 @@ int yyerror(char *s)
     printf("Syntax Error on line %s\n", s);
     return 0;
 }
-
-
-
 time_t epoch_add_dt(time_t epoch, int dy, int tm)
 {
     // Create localtime struct from current_time
@@ -355,7 +352,3 @@ time_t recur(char *str)
     return recur_time;
 }
 
-int main()
-{
-    printf("%ld\n", recur("u1u2"));
-}

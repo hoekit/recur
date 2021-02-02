@@ -1,6 +1,6 @@
 // src/eom_days.c
 #include <time.h>       /* struct tm    */
-#include "helpers.h"    /* is_leap_year */
+#include "_private.h"   /* is_leap_year */
 
 // eom_days(2021, 1, 30) ==  1      // Month with 31 days
 // eom_days(2021, 4,  1) == 29      // Month with 30 days

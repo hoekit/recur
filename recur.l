@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "recur.tab.h"
-#include "helpers.h"
+#include "_private.h"
 
 char val[5] = "";       // Container for values of tokens
 

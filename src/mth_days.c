@@ -1,5 +1,5 @@
 // src/mth_days.c
-#include "helpers.h"    /* is_leap_year */
+#include "_private.h"    /* is_leap_year */
 
 // mth_days(2021, 1) == 31          // Month with 31 days
 // mth_days(2020,13) == 31          // 2020-13 equivalent to 2021-01

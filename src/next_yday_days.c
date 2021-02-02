@@ -4,8 +4,6 @@
 #include <time.h>       /* struct tm    */
 #include "_private.h"
 
-int D = 0;
-
 int yday_of(int year,int mon,int mday)
     /* Days from start of year to year/mon/mday
          year: Year since 1900

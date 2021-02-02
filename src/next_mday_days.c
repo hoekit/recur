@@ -1,7 +1,7 @@
 // src/next_mday_days.c
 #include <stdio.h>      /* printf       */
 #include <time.h>       /* struct tm    */
-#include "helpers.h"    /* mth_days     */
+#include "_private.h"   /* mth_days     */
 
 int next_mday_days(int tgt_mday, const struct tm* lc)
                                     // Days to end of current month

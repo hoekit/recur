@@ -4,7 +4,7 @@ LIBS = lib/libhelpers.a lib/libbase.a
 recur: ${LIBS} ${INCL} recur.l recur.y
 	flex -l recur.l
 	bison -dv recur.y
-	gcc -o recur recur.tab.c lex.yy.c -Llib -lfl -lhelpers -lbase
+	gcc -o recur.o recur.tab.c lex.yy.c -Llib -lfl -lhelpers -lbase
 
 lib/libbase.a: src/is_leap_year.o
 	ar rs lib/libbase.a src/is_leap_year.o
