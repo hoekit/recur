@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include "helpers.h"
+#include "_private.h"
 
 typedef struct {
     char name[10];
@@ -10,6 +11,10 @@ typedef struct {
 
 int num_errors = 0;
 int num_tests  = 0;
+
+char tgot[10] = "";
+char texp[10] = "";
+char tmsg[80] = "";
 
 void is(char *got, char *exp, char *msg) {
     num_tests++;
@@ -99,13 +104,32 @@ void check_next_next_mday_days(int tgt_mday, int yy, int mm, int dd, int val)
         0
     };
 
-    char got[10] = "";
-    char exp[10] = "";
-    char msg[80] = "";
-    sprintf(got,"%d", next_next_mday_days(tgt_mday, lc));
-    sprintf(exp,"%d", val);
-    sprintf(msg,"next_next_mday_days(%2d,%5d,%2d,%3d) == %2d",tgt_mday,yy,mm,dd,val);
-    is(got,exp,msg);
+    sprintf(tgot,"%d", next_next_mday_days(tgt_mday, lc));
+    sprintf(texp,"%d", val);
+    sprintf(tmsg,"next_next_mday_days(%2d,%5d,%2d,%3d) == %2d",tgt_mday,yy,mm,dd,val);
+    is(tgot,texp,tmsg);
+}
+void check_yday_of(int yy, int mm, int dd, int val)
+{
+    int year = yy - 1900;       // Convert to struct tm range
+    int mon  = mm - 1;
+    int mday = dd;
+
+    sprintf(tgot,"%d", yday_of(year,mon,mday));
+    sprintf(texp,"%d", val);
+    sprintf(tmsg,"ydays_of(%04d,%02d,%02d) == %3d",yy,mm,dd,val);
+    is(tgot,texp,tmsg);
+}
+void check_eoy_days(int yy, int mm, int dd, int val)
+{
+    struct tm lc[1] = {
+        0, 0, 0,
+        dd, mm - 1, yy - 1900,
+        0, 0, 0 };
+    sprintf(tgot,"%d", eoy_days(lc));
+    sprintf(texp,"%d", val);
+    sprintf(tmsg,"eoy_days(%04d,%02d,%02d) == %3d",yy,mm,dd,val);
+    is(tgot,texp,tmsg);
 }
 void status()
 {
@@ -118,6 +142,22 @@ void status()
 int main(void)
 {
     is("ok","ok","is()");
+    // exit(EXIT_SUCCESS);
+
+    printf("\n ydays_of()\n");
+    check_yday_of(2020,1,1,0);          // Jan 1 on leap year
+    check_yday_of(2021,1,1,0);          // Jan 1 on non-leap year
+    check_yday_of(2020,12,31,365);      // Dec 31 on leap year
+    check_yday_of(2021,12,31,364);      // Dec 31 on non-leap year
+    check_yday_of(2021, 2, 2, 32);      // Feb  2 on non-leap year
+    // exit(EXIT_SUCCESS);
+
+    printf("\n eoy_days()\n");
+    check_eoy_days(2020,1,1,365);       // Jan 1 on leap year
+    check_eoy_days(2021,1,1,364);       // Jan 1 on non-leap year
+    check_eoy_days(2020,12,31,0);       // Dec 31 on leap year
+    check_eoy_days(2021,12,31,0);       // Dec 31 on non-leap year
+    check_eoy_days(2021, 2, 2,332);     // Feb  2 on non-leap year
     // exit(EXIT_SUCCESS);
 
     printf("\n next_next_mday_days()\n");
