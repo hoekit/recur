@@ -343,7 +343,7 @@ time_t recur(char *str)
 
     D && printf("Today started at: %ld\n", epoch_add_dt(current_time, 0, 0));
 
-    YY_BUFFER_STATE bp = yy_scan_string("u1u2");
+    YY_BUFFER_STATE bp = yy_scan_string(str);
     yyparse();
     yy_delete_buffer(bp);
 
