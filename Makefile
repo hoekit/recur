@@ -5,7 +5,6 @@ recur: ${LIBS} ${INCL} recur.l recur.y
 	flex -l recur.l
 	bison -dv recur.y
 	gcc -o recur recur.tab.c lex.yy.c -Llib -lfl -lhelpers -lbase
-	rm -f lex.yy.c recur.output recur.tab.h recur.tab.c
 
 lib/libbase.a: src/is_leap_year.o
 	ar rs lib/libbase.a src/is_leap_year.o

@@ -11,6 +11,7 @@ int yylex();
 int yyerror(char *s);
 
 time_t current_time;
+time_t recur_time;
 struct tm lc[1];     // local time
 
 int next_hh[3] = {-1,-1,-1};
@@ -66,7 +67,7 @@ void iter_upd_next_tm();            // Generate possible tval and
 
 input:
   loops {
-        printf("%ld\n", dt_to_epoch($1.dy,$1.tm));
+        recur_time = dt_to_epoch($1.dy,$1.tm);
     }
 ;
 
@@ -329,10 +330,13 @@ void status(char *msg)
     printf("\n");
 }
 
+typedef struct yy_buffer_state * YY_BUFFER_STATE;
+extern YY_BUFFER_STATE yy_scan_string(char * str);
+extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
-int main()
+time_t recur(char *str)
 {
-    D && printf("\n");
+     D && printf("\n");
 
     // current_time = (time_t)1611380990;  // Mock Sat Jan 23 12:49:39 2021
     current_time = time(NULL);
@@ -342,8 +346,16 @@ int main()
 
     D && printf("Today started at: %ld\n", epoch_add_dt(current_time, 0, 0));
 
+    YY_BUFFER_STATE bp = yy_scan_string("u1u2");
     yyparse();
+    yy_delete_buffer(bp);
+
     status("At End");
 
-    return 0;
+    return recur_time;
+}
+
+int main()
+{
+    printf("%ld\n", recur("u1u2"));
 }
