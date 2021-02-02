@@ -1,5 +1,5 @@
-INCL = helpers.h _private.h
-LIBS = lib/libhelpers.a lib/libbase.a
+INCL = recur.h _private.h
+LIBS = lib/libbase.a lib/libhelpers.a
 
 recur: ${LIBS} ${INCL} recur.l recur.y
 	flex -l recur.l

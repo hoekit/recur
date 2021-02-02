@@ -4,7 +4,7 @@
 #include <time.h>
 #include <string.h>         /* strdup   */
 #include <stdlib.h>         /* atoi         */
-#include "helpers.h"
+#include "recur.h"
 #include "_private.h"
 
 int yylex();
