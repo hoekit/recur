@@ -1,5 +1,7 @@
+INCL = helpers.h _private.h
+LIBS = lib/libhelpers.a lib/libbase.a
 
-recur: lib/libhelpers.a lib/libbase.a recur.l recur.y
+recur: ${LIBS} ${INCL} recur.l recur.y
 	flex -l recur.l
 	bison -dv recur.y
 	gcc -o recur recur.tab.c lex.yy.c -Llib -lfl -lhelpers -lbase
@@ -8,14 +10,16 @@ recur: lib/libhelpers.a lib/libbase.a recur.l recur.y
 lib/libbase.a: src/is_leap_year.o
 	ar rs lib/libbase.a src/is_leap_year.o
 
-helperfiles = src/shift-one-char.o src/mth_days.o src/next_mday_days.o src/eom_days.o
+helperfiles = src/shift-one-char.o src/mth_days.o \
+	src/next_mday_days.o src/next_yday_days.o \
+	src/eom_days.o
 lib/libhelpers.a: $(helperfiles)
 	ar rs lib/libhelpers.a ${helperfiles}
 
 src/%.o: src/%.c
 	cd src && gcc -I.. -L../lib -lbase -c ../$^ -o ../$@
 
-test: t/10_helpers.c lib/libhelpers.a lib/libbase.a
+test: t/10_helpers.c ${INCL} ${LIBS}
 	cd t && gcc -o t_helper 10_helpers.c -I.. -L../lib -lhelpers -lbase
 	t/t_helper
 
