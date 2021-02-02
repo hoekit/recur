@@ -1,5 +1,5 @@
 # Skip generated binary
-recur
+main
 
 # Skip object files
 *.o
