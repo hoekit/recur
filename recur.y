@@ -2,7 +2,10 @@
 %{
 #include <stdio.h>
 #include <time.h>
+#include <string.h>         /* strdup   */
+#include <stdlib.h>         /* atoi         */
 #include "helpers.h"
+#include "_private.h"
 
 int yylex();
 int yyerror(char *s);
@@ -39,7 +42,6 @@ void upd_next_tm(int tval);         // Update next_tm given tval
 void status(char *msg);
 void iter_upd_next_tm();            // Generate possible tval and
                                     //   iteratively update next_tm
-
 %}
 
 %token UVAL HVAL MVAL DVAL YVAL OTHER SEP
@@ -231,7 +233,27 @@ dexp:
 ;
 
 yexp:
-  YVAL  { D && printf("Handle yexp: y%s\n", $1); }
+  YVAL {
+    D && printf("On y%s:\n", $1);
+    D && printf("  On yval:%s tm_mon:%d tm_mday:%d\n",
+        $1,lc->tm_mon,lc->tm_mday);
+
+    // Read month and day values into mm and dd
+    char _mm[3] = "00"; _mm[0] = $1[0]; _mm[1] = $1[1];
+    char _dd[3] = "00"; _dd[0] = $1[2]; _dd[1] = $1[3];
+    int mm = atoi(_mm);
+    int dd = atoi(_dd);
+    D && printf("     mm:%d dd:%d\n", mm, dd);
+
+    int n1 = next_yday_days(mm,dd,lc);
+    int n2 = next_next_yday_days(mm,dd,lc);
+
+    reval(&next_dy[1], next_dy[0]);
+    reval(&next_dy[0], n1);
+    reval(&next_dy[1], n2);
+
+    status("On yexp");
+  }
 ;
 
 %%
@@ -295,7 +317,6 @@ void iter_upd_next_tm()             // Generate possible tval and
         }
     }
 }
-
 void status(char *msg)
 {
     if (!D) return;
