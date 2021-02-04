@@ -43,6 +43,7 @@ void upd_next_tm(int tval);         // Update next_tm given tval
 void status(char *msg);
 void iter_upd_next_tm();            // Generate possible tval and
                                     //   iteratively update next_tm
+void reset();                       // Reset helper structs
 %}
 
 %token UVAL HVAL MVAL DVAL YVAL OTHER SEP
@@ -109,11 +110,7 @@ loop:
         next.tm = temp.tm;
     }
 
-    // Reset helper structs
-    next_hh[0] = next_hh[1] = next_hh[2] = -1;
-    next_mm[0] = next_mm[1] = -1;
-    next_tm[0] = next_tm[1] = -1;
-    next_dy[0] = next_dy[1] = -1;
+    reset();
 
     status("On loop");
   }
@@ -314,6 +311,13 @@ void iter_upd_next_tm()             // Generate possible tval and
             upd_next_tm(next_hh[h]*60*60 + next_mm[m]*60);
         }
     }
+}
+void reset()                        // Reset helper structs
+{
+    next_hh[0] = next_hh[1] = next_hh[2] = -1;
+    next_mm[0] = next_mm[1] = -1;
+    next_tm[0] = next_tm[1] = -1;
+    next_dy[0] = next_dy[1] = -1;
 }
 void status(char *msg)
 {
