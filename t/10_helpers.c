@@ -131,6 +131,10 @@ int main(void)
     check_recur("H10M15y0315",1615778100);
     check_recur("H10M15y0518,y0315", 1615762800);
     check_recur("H10M15y0518y0315",1615778100);
+    check_recur("u1", 1612738800);
+    check_recur("w1", 1612738800);
+    check_recur("u7", 1612652400);
+    check_recur("w0", 1612652400);
     // exit(EXIT_SUCCESS);
 
     printf("\n ydays_of()\n");

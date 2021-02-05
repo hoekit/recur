@@ -35,8 +35,6 @@ int next_dy[2] =
 int reset_count = 0;
 
 typedef struct { int dy; int tm; } Next;
-Next head = { -1, -1 };
-Next tail = { -1, -1 };
 Next next = { -1, -1 };
 
 // HELPER FUNCTIONS
@@ -51,9 +49,10 @@ void iter_upd_next_tm();            // Generate possible tval and
 void reset();                       // Reset helper structs
 %}
 
-%token UVAL HVAL MVAL DVAL YVAL OTHER SEP
+%token UVAL WVAL HVAL MVAL DVAL YVAL OTHER SEP
 
 %type <uval> UVAL
+%type <wval> WVAL
 %type <dval> DVAL
 %type <hval> HVAL
 %type <mval> MVAL
@@ -62,6 +61,7 @@ void reset();                       // Reset helper structs
 
 %union{
     int uval;
+    int wval;
     int dval;
     int hval;
     int mval;
@@ -72,17 +72,8 @@ void reset();                       // Reset helper structs
 %%
 
 input:
-  head {
-    D && printf("input - head\n");
-    recur_time = dt_to_epoch(head.dy,head.tm);
-  }
-| head tails {
-    D && printf("input - head tails\n");
-    // Reval head, given values in tail
-    reval(&head.dy,tail.dy); reval(&head.tm,tail.tm);
-    // Update recur_time
-    recur_time = dt_to_epoch(head.dy,head.tm);
-  }
+  head          { D && printf("input - head\n"); }
+| head tails    { D && printf("input - head tails\n"); }
 ;
 
 tails:
@@ -95,12 +86,10 @@ head:
     // head occurs only once
     D && printf("head\n");
 
-    // Store values into head
-    reval(&(head.dy),$1.dy); reval(&(head.tm),$1.tm);
+    // Update next and recur_time
+    reval(&(next.dy),$1.dy); reval(&(next.tm),$1.tm);
+    recur_time = dt_to_epoch(next.dy,next.tm);
 
-    // time_t temp = dt_to_epoch($1.dy,$1.tm);
-    // D && printf("head - loops: %ld\n",temp);
-    // $$.dy = next.dy; $$.tm = next.tm;
     reset();
   }
 ;
@@ -110,8 +99,9 @@ tail:
     // tail occurs multiple times
     D && printf("tail\n");
 
-    // Store values into tail
-    reval(&(tail.dy),$1.dy); reval(&(tail.tm),$1.tm);
+    // Update next and recur_time
+    reval(&(next.dy),$1.dy); reval(&(next.tm),$1.tm);
+    recur_time = dt_to_epoch(next.dy,next.tm);
 
     reset();
   }
@@ -234,6 +224,7 @@ mexp:
 
 rexp:
   uexp
+| wexp
 | dexp
 | yexp
 ;
@@ -254,6 +245,25 @@ uexp:
     }
     reval(&next_dy[1], next_dy[0] + 7);
     status("On uexp");
+  }
+;
+
+wexp:
+  WVAL {
+    D && printf("On w%d:\n", $1);
+    int wday = $1;
+    D && printf("  Given wday:%d and lc->tm_wday:%d\n", wday, lc->tm_wday);
+    if (wday == lc->tm_wday) {
+        D && printf("  Today is the next occurrence\n");
+        reval(&next_dy[1], next_dy[0]);
+        reval(&next_dy[0], 0);
+    } else {
+        D && printf("  Next occurrence on day of week:%d\n", $1);
+        reval(&next_dy[1], next_dy[0]);
+        reval(&next_dy[0], (wday + 7 - lc->tm_wday) % 7);
+    }
+    reval(&next_dy[1], next_dy[0] + 7);
+    status("On wexp");
   }
 ;
 
@@ -304,8 +314,8 @@ yexp:
 
 int yyerror(char *s)
 {
-    printf("Syntax Error on line %s\n", s);
-    return 0;
+    D && printf("Syntax Error on line %s\n", s);
+    return -1;
 }
 time_t epoch_add_dt(time_t epoch, int dy, int tm)
 {
@@ -381,8 +391,6 @@ void status(char *msg)
     printf("  next_tm: [ %d %d ]\n",    next_tm[0], next_tm[1]);
     printf("  next_dy: [ %d %d ]\n",    next_dy[0], next_dy[1]);
     printf("  next   : [ %d %d ]\n",    next.dy,    next.tm);
-    printf("  head   : [ %d %d ]\n",    head.dy,    head.tm);
-    printf("  tail   : [ %d %d ]\n",    tail.dy,    tail.tm);
     printf("  recur_time: %ld\n",       recur_time);
     printf("\n");
 }
@@ -393,15 +401,12 @@ extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
 time_t recur(char *str)
 {
-    reset();
-    head.dy = head.tm = -1;
-    tail.dy = tail.tm = -1;
-    recur_time = next.dy = next.tm = -1;
-    status("At Start");
-
     D && printf("\n");
 
-    // current_time = (time_t)1611380990;  // Mock Sat Jan 23 12:49:39 2021
+    // Initialize all variables and structs
+    reset(); recur_time = next.dy = next.tm = -1; reset_count = 0;
+    status("At Start");
+
     current_time = time(NULL);
 
     // convert current_time to localtime and store into lc
