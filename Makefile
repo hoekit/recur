@@ -1,8 +1,8 @@
 INCL = recur.h _private.h
 LIBS = lib/libbase.a lib/libhelpers.a
 
-main: main.o lib/librecur.a
-	gcc -o main main.o -Llib -lrecur
+main: example.o lib/librecur.a
+	gcc -o main example.o -Llib -lrecur
 
 XFILES = recur.tab.o lex.yy.o src/shift-one-char.o \
 	src/next_mday_days.o src/mth_days.o src/is_leap_year.o \
@@ -38,7 +38,7 @@ test: t/10_helpers.c ${INCL} ${LIBS} lib/librecur.a
 
 clean:
 	rm -f lex.yy.c recur.output recur.tab.h recur.tab.c
-	rm -f *.o
+	rm -f main *.o
 	rm -f src/*.o
 	rm -f lib/*.a
 	rm -f t/t_helper
