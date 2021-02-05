@@ -258,9 +258,15 @@ void on_dexp(int dval)
     int mday = dval;
     D && printf("  Given mday:%d and lc->tm_mday:%d\n", mday, lc->tm_mday);
     if (mday == lc->tm_mday) {
-        D && printf("  Today is the next occurrence\n");
-        reval(&next_dy[1], next_dy[0]);
-        reval(&next_dy[0], 0);
+        if  (next_tm[0] >= 0) {
+            D && printf("  Today can be next occurrence\n");
+            reval(&next_dy[1], next_dy[0]);
+            reval(&next_dy[0], 0);
+        } else {
+            D && printf("  Today's not next occurrence. No suitable time.\n");
+            reval(&next_dy[1], next_dy[0]);
+            reval(&next_dy[0], next_next_mday_days(dval,lc));
+        }
     } else {
         D && printf("  Next occurrence on day of month:%d\n", dval);
         reval(&next_dy[1], next_dy[0]);
@@ -285,9 +291,24 @@ void on_yexp(char *yval)
     int n1 = next_yday_days(mm,dd,lc);
     int n2 = next_next_yday_days(mm,dd,lc);
 
-    reval(&next_dy[1], next_dy[0]);
-    reval(&next_dy[0], n1);
-    reval(&next_dy[1], n2);
+    D && printf("n1: %d\n",n1);
+    D && printf("n2: %d\n",n2);
+
+    if (n1 == 0) {
+        if  (next_tm[0] >= 0) {
+            reval(&next_dy[1], next_dy[0]);
+            reval(&next_dy[0], n1);
+            reval(&next_dy[1], n2);
+        } else {
+            reval(&next_dy[1], next_dy[0]);
+            reval(&next_dy[0], n2);     // Reval with next next value
+            reval(&next_dy[1], n2);
+        }
+    } else {
+        reval(&next_dy[1], next_dy[0]);
+        reval(&next_dy[0], n1);
+        reval(&next_dy[1], n2);
+    }
 
     status("On yexp");
 }

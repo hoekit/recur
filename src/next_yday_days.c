@@ -44,21 +44,25 @@ int next_yday_days(int mm, int dd,
            365 if Feb-29 between lc and mm dd */
 {
     D && printf("next_yday_days()\n");
-    D && printf("  On lc: %d-%02d-%2d\n",
+    D && printf("  On lc: %d-%02d-%02d\n",
             lc->tm_year+1900, lc->tm_mon+1, lc->tm_mday);
     D && printf("     mm:%d dd:%d\n", mm, dd);
 
     int yday0 = yday_of(lc->tm_year, mm-1, dd);
                                         // yday of mmdd in curr year
+                                        // Jan 01 = 1
     int yday1 = yday_of(lc->tm_year+1, mm-1, dd);
                                         // yday of mmdd in next year
+                                        // Jan 01 = 1
+
+    D && printf("  yday0:%d yday1:%d\n", yday0, yday1);
 
     if (yday0 >= lc->tm_yday)           // mmdd ON or AFTER lc (curr year)
         return yday0 - lc->tm_yday;     //   difference
 
    else                                 // mmdd BEFORE lc (next year)
         return eoy_days(lc)             //   add up days to end of year
-               + yday1;                 //   and yday of mmdd next year
+               + yday1 + 1;             //   and yday of mmdd next year
 }
 
 int next_next_yday_days(int mm,
@@ -83,11 +87,11 @@ int next_next_yday_days(int mm,
 
     if (yday0 >= lc->tm_yday)           // mmdd ON or AFTER lc i.e. next year
         return eoy_days(lc)             //   add up days to end of curr year
-               +yday1;                  //     + days up to mmdd next year
+               + yday1 + 1;             //     + days up to mmdd next year
 
     else                                // mmdd BEFORE lc i.e. next next year
         return eoy_days(lc)             //   add up days to end of curr year
                + year1_days             //     + days in next year
-               + yday2;                 //     + days up to mmdd next next year
+               + yday2 + 1;             //     + days up to mmdd next next year
 }
 

@@ -5,10 +5,6 @@
 #include "_private.h"
 #include "recur.h"
 
-typedef struct {
-    char name[10];
-} Person;
-
 int num_errors = 0;
 int num_tests  = 0;
 
@@ -114,6 +110,28 @@ void check_recur(char *expr, time_t val)
     sprintf(tmsg,"recur(%s) == %ld",expr,val);
     is(tgot,texp,tmsg);
 }
+void check_next_yday_days(int mm, int dd, int val)
+{
+    time_t current_time = time(NULL);
+    struct tm lc[1];
+    localtime_r(&current_time,lc);
+
+    sprintf(tgot,"%d", next_yday_days(mm,dd,lc));
+    sprintf(texp,"%d", val);
+    sprintf(tmsg,"next_yday_days(%d, %d) == %d",mm,dd,val);
+    is(tgot,texp,tmsg);
+}
+void check_next_next_yday_days(int mm, int dd, int val)
+{
+    time_t current_time = time(NULL);
+    struct tm lc[1];
+    localtime_r(&current_time,lc);
+
+    sprintf(tgot,"%d", next_next_yday_days(mm,dd,lc));
+    sprintf(texp,"%d", val);
+    sprintf(tmsg,"next_yday_days(%d, %d) == %d",mm,dd,val);
+    is(tgot,texp,tmsg);
+}
 void t_status()
 {
     if (num_errors)
@@ -125,6 +143,18 @@ void t_status()
 int main(void)
 {
     is("ok","ok","is()");
+    // exit(EXIT_SUCCESS);
+
+    printf("\n next_yday_days()\n");
+    check_next_yday_days(1,1,330);
+    check_next_yday_days(2,5,0);
+    check_next_yday_days(2,4,364);
+    // exit(EXIT_SUCCESS);
+
+    printf("\n next_next_yday_days()\n");
+    check_next_next_yday_days(1,1,330+365);
+    check_next_next_yday_days(2,5,0+365);
+    check_next_next_yday_days(2,4,364+365);
     // exit(EXIT_SUCCESS);
 
     printf("\n recur()\n");
