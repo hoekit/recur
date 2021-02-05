@@ -38,9 +38,16 @@ typedef struct { int dy; int tm; } Next;
 Next next = { -1, -1 };
 
 // SYMBOL HANDLERS
-Next on_head_loops(int dy, int tm);
-Next on_tail_loops(int dy, int tm);
-Next on_loop();
+void on_loop();
+void on_texps_empty();
+void on_texps_hexps();
+void on_texps_hexps_mexps();
+void on_hexp(int hval);
+void on_mexp(int mval);
+void on_uexp(int uval);
+void on_wexp(int wval);
+void on_dexp(int dval);
+void on_yexp(char *yval);
 
 // HELPER FUNCTIONS
 void say(char *str);                // Debug-aware printf
@@ -74,215 +81,46 @@ void reset();                       // Reset helper structs
 %%
 
 input:
-  head          { say("input: head\n"); }
-| head tails    { say("input: head tails\n"); }
+  head                  { say("input: head\n"); }
+| head tails            { say("input: head tails\n"); }
 ;
 
 tails:
-  SEP tail       { say("tails: SEP tail\n"); }
-| tails SEP tail { say("tails: tails SEP tail\n"); }
-;
+  SEP tail              { say("tails: SEP tail\n"); }
+| tails SEP tail        { say("tails: tails SEP tail\n"); };
 
-head: loops     { on_head_loops($1.dy, $1.tm); };
-tail: loops     { on_tail_loops($1.dy, $1.tm); };
+head: loops             { say("head\n"); reset(); };
+tail: loops             { say("tail\n"); reset(); };
 
 loops:
-  loop          { say("loops: loop\n");       $$.dy = next.dy; $$.tm = next.tm; }
-| loops loop    { say("loops: loops loop\n"); $$.dy = next.dy; $$.tm = next.tm; }
-;
+  loop                  { say("loops: loop\n");       }
+| loops loop            { say("loops: loops loop\n"); };
 
-loop: texps rexp { on_loop(); } ;
+loop    : texps rexp    { on_loop(); } ;
 
-texps:
-  %empty {
-    D && printf("On empty texps:\n");
-    if ((next_tm[0] == -1) && (next_tm[1] == -1)) {
-        D && printf("  Default to 6am.\n");
-        upd_next_tm(6*60*60);
-    } else {
-        D && printf("  Don't default to 6am. next_tm has values.\n");
-    }
-    status("On texps \%empty");
-  }
-| hexps {
-    D && printf("On HEXPS only:\n");
-    D && printf("  Default minute to 00\n");
-    next_mm[0] = 0;
-    iter_upd_next_tm();
-    status("On texps hexps");
-  }
-| hexps mexps {
-    D && printf("On HEXPS MEXPS:\n");
-    iter_upd_next_tm();
-    status("On texps mexps");
-  }
-;
+texps   : %empty        { on_texps_empty(); }
+        | hexps         { on_texps_hexps(); }
+        | hexps mexps   { on_texps_hexps_mexps(); };
 
-hexps:
-  hexp
-| hexp hexps
-;
+hexps   : hexp
+        | hexp hexps;
 
-hexp:
-  HVAL {
-    D && printf("On H%02d:\n", $1);
-    if ($1 < lc->tm_hour) {
-        D && printf("  H%02d is earlier than current hour:%02d\n", $1, lc->tm_hour);
-        D && printf("  Update next_hh[0] from %d to ", next_hh[0]);
-        reval( &next_hh[0], $1 );
-        D && printf("%d\n", next_hh[0]);
-    } else if ($1 == lc->tm_hour) {
-        D && printf("  H%02d is same as current hour:%02d\n", $1, lc->tm_hour);
-        D && printf("  Update next_hh[1] from %d to ", next_hh[1]);
-        reval( &next_hh[1], $1 );
-        D && printf("%d\n", next_hh[1]);
-    } else {
-        D && printf("  H%02d is later than current hour:%02d\n", $1, lc->tm_hour);
-        D && printf("  Update next_hh[2] from %d to ", next_hh[2]);
-        reval( &next_hh[2], $1 );
-        D && printf("%d\n", next_hh[2]);
-    }
-  }
-;
+hexp    : HVAL          { on_hexp($1); };
 
-mexps:
-  mexp
-| mexp mexps
-;
+mexps   : mexp
+        | mexp mexps;
 
-mexp:
-  MVAL {
-    D && printf("On M%02d:\n", $1);
-    if ($1 <= lc->tm_min) {
-        D && printf("  M%d is earlier than current min:%d\n", $1, lc->tm_min);
-        D && printf("  Update next_mm[0] from %d to ", next_mm[0]);
-        reval( &next_mm[0], $1 );
-        D && printf("%d\n", next_mm[0]);
-    } else {
-        D && printf("  M%d is later than current min:%d\n", $1, lc->tm_min);
-        D && printf("  Update next_mm[1] from %d to ", next_mm[1]);
-        reval( &next_mm[1], $1 );
-        D && printf("%d\n", next_mm[1]);
-    }
-  }
-;
+mexp    : MVAL          { on_mexp($1); };
 
-rexp:
-  uexp
-| wexp
-| dexp
-| yexp
-;
-
-uexp:
-  UVAL {
-    D && printf("On u%d:\n", $1);
-    int wday = $1 == 7 ? 0 : $1;
-    D && printf("  Given wday:%d and lc->tm_wday:%d\n", wday, lc->tm_wday);
-    if (wday == lc->tm_wday) {
-        D && printf("  Today is the next occurrence\n");
-        reval(&next_dy[1], next_dy[0]);
-        reval(&next_dy[0], 0);
-    } else {
-        D && printf("  Next occurrence on day of week:%d\n", $1);
-        reval(&next_dy[1], next_dy[0]);
-        reval(&next_dy[0], (wday + 7 - lc->tm_wday) % 7);
-    }
-    reval(&next_dy[1], next_dy[0] + 7);
-    status("On uexp");
-  }
-;
-
-wexp:
-  WVAL {
-    D && printf("On w%d:\n", $1);
-    int wday = $1;
-    D && printf("  Given wday:%d and lc->tm_wday:%d\n", wday, lc->tm_wday);
-    if (wday == lc->tm_wday) {
-        D && printf("  Today is the next occurrence\n");
-        reval(&next_dy[1], next_dy[0]);
-        reval(&next_dy[0], 0);
-    } else {
-        D && printf("  Next occurrence on day of week:%d\n", $1);
-        reval(&next_dy[1], next_dy[0]);
-        reval(&next_dy[0], (wday + 7 - lc->tm_wday) % 7);
-    }
-    reval(&next_dy[1], next_dy[0] + 7);
-    status("On wexp");
-  }
-;
-
-dexp:
-  DVAL {
-    D && printf("On d%02d:\n", $1);
-    int mday = $1;
-    D && printf("  Given mday:%d and lc->tm_mday:%d\n", mday, lc->tm_mday);
-    if (mday == lc->tm_mday) {
-        D && printf("  Today is the next occurrence\n");
-        reval(&next_dy[1], next_dy[0]);
-        reval(&next_dy[0], 0);
-    } else {
-        D && printf("  Next occurrence on day of month:%d\n", $1);
-        reval(&next_dy[1], next_dy[0]);
-        reval(&next_dy[0], next_mday_days($1,lc));
-    }
-    reval(&next_dy[1], next_next_mday_days($1,lc));
-    status("On dexp");
-  }
-;
-
-yexp:
-  YVAL {
-    D && printf("On y%s:\n", $1);
-    D && printf("  On yval:%s tm_mon:%d tm_mday:%d\n",
-        $1,lc->tm_mon,lc->tm_mday);
-
-    // Read month and day values into mm and dd
-    char _mm[3] = "00"; _mm[0] = $1[0]; _mm[1] = $1[1];
-    char _dd[3] = "00"; _dd[0] = $1[2]; _dd[1] = $1[3];
-    int mm = atoi(_mm);
-    int dd = atoi(_dd);
-    D && printf("     mm:%d dd:%d\n", mm, dd);
-
-    int n1 = next_yday_days(mm,dd,lc);
-    int n2 = next_next_yday_days(mm,dd,lc);
-
-    reval(&next_dy[1], next_dy[0]);
-    reval(&next_dy[0], n1);
-    reval(&next_dy[1], n2);
-
-    status("On yexp");
-  }
-;
-
+rexp    : UVAL          { on_uexp($1); }
+        | WVAL          { on_wexp($1); }
+        | DVAL          { on_dexp($1); }
+        | YVAL          { on_yexp($1); };
 %%
 
 
 // SYMBOL HANDLERS
-Next on_head_loops(int dy, int tm)
-{
-    // head occurs only once
-    say("head\n");
-
-    // Update next and recur_time
-    reval(&(next.dy), dy);
-    reval(&(next.tm), tm);
-    recur_time = dt_to_epoch(next.dy,next.tm);
-
-    reset();
-}
-Next on_tail_loops(int dy, int tm)
-{
-    say("tail\n");      // tail occurs multiple times
-
-    // Update next and recur_time
-    reval(&(next.dy), dy);
-    reval(&(next.tm), tm);
-    recur_time = dt_to_epoch(next.dy,next.tm);
-
-    reset();
-}
-Next on_loop()
+void on_loop()
 {
     // A loop is found here so update the next struct here
 
@@ -314,8 +152,146 @@ Next on_loop()
         next.tm = temp.tm;
     }
 
+    recur_time = dt_to_epoch(next.dy,next.tm);
+
     status("On loop");
 }
+void on_texps_empty()
+{
+    say("On empty texps:\n");
+
+    if ((next_tm[0] == -1) && (next_tm[1] == -1)) {
+        say("  Default to 6am.\n");
+        upd_next_tm(6*60*60);
+    } else {
+        say("  Don't default to 6am. next_tm has values.\n");
+    }
+    status("On texps \%empty");
+}
+void on_texps_hexps()
+{
+    say("On texps: hexps\n");
+    say("  Default minute to 00\n");
+    next_mm[0] = 0;
+    iter_upd_next_tm();
+    status("On texps: hexps");
+}
+void on_texps_hexps_mexps()
+{
+    say("On texps: hexps mexps\n");
+    iter_upd_next_tm();
+    status("On texps: hexps mexps");
+}
+void on_hexp(int hval)
+{
+    D && printf("On H%02d:\n", hval);
+    if (hval < lc->tm_hour) {
+        D && printf("  H%02d is earlier than current hour:%02d\n", hval, lc->tm_hour);
+        D && printf("  Update next_hh[0] from %d to ", next_hh[0]);
+        reval( &next_hh[0], hval );
+        D && printf("%d\n", next_hh[0]);
+    } else if (hval == lc->tm_hour) {
+        D && printf("  H%02d is same as current hour:%02d\n", hval, lc->tm_hour);
+        D && printf("  Update next_hh[1] from %d to ", next_hh[1]);
+        reval( &next_hh[1], hval );
+        D && printf("%d\n", next_hh[1]);
+    } else {
+        D && printf("  H%02d is later than current hour:%02d\n", hval, lc->tm_hour);
+        D && printf("  Update next_hh[2] from %d to ", next_hh[2]);
+        reval( &next_hh[2], hval );
+        D && printf("%d\n", next_hh[2]);
+    }
+}
+void on_mexp(int mval)
+{
+    D && printf("On M%02d:\n", mval);
+    if (mval <= lc->tm_min) {
+        D && printf("  M%d is earlier than current min:%d\n", mval, lc->tm_min);
+        D && printf("  Update next_mm[0] from %d to ", next_mm[0]);
+        reval( &next_mm[0], mval );
+        D && printf("%d\n", next_mm[0]);
+    } else {
+        D && printf("  M%d is later than current min:%d\n", mval, lc->tm_min);
+        D && printf("  Update next_mm[1] from %d to ", next_mm[1]);
+        reval( &next_mm[1], mval );
+        D && printf("%d\n", next_mm[1]);
+    }
+}
+void on_uexp(int uval)
+{
+    D && printf("On u%d:\n", uval);
+    int wday = uval == 7 ? 0 : uval;
+    D && printf("  Given wday:%d and lc->tm_wday:%d\n", wday, lc->tm_wday);
+    if (wday == lc->tm_wday) {
+        D && printf("  Today is the next occurrence\n");
+        reval(&next_dy[1], next_dy[0]);
+        reval(&next_dy[0], 0);
+    } else {
+        D && printf("  Next occurrence on day of week:%d\n", uval);
+        reval(&next_dy[1], next_dy[0]);
+        reval(&next_dy[0], (wday + 7 - lc->tm_wday) % 7);
+    }
+    reval(&next_dy[1], next_dy[0] + 7);
+    status("On uexp");
+}
+void on_wexp(int wval)
+{
+    D && printf("On w%d:\n", wval);
+    int wday = wval;
+    D && printf("  Given wday:%d and lc->tm_wday:%d\n", wday, lc->tm_wday);
+    if (wday == lc->tm_wday) {
+        D && printf("  Today is the next occurrence\n");
+        reval(&next_dy[1], next_dy[0]);
+        reval(&next_dy[0], 0);
+    } else {
+        D && printf("  Next occurrence on day of week:%d\n", wval);
+        reval(&next_dy[1], next_dy[0]);
+        reval(&next_dy[0], (wday + 7 - lc->tm_wday) % 7);
+    }
+    reval(&next_dy[1], next_dy[0] + 7);
+    status("On wexp");
+}
+void on_dexp(int dval)
+{
+    D && printf("On d%02d:\n", dval);
+    int mday = dval;
+    D && printf("  Given mday:%d and lc->tm_mday:%d\n", mday, lc->tm_mday);
+    if (mday == lc->tm_mday) {
+        D && printf("  Today is the next occurrence\n");
+        reval(&next_dy[1], next_dy[0]);
+        reval(&next_dy[0], 0);
+    } else {
+        D && printf("  Next occurrence on day of month:%d\n", dval);
+        reval(&next_dy[1], next_dy[0]);
+        reval(&next_dy[0], next_mday_days(dval,lc));
+    }
+    reval(&next_dy[1], next_next_mday_days(dval,lc));
+    status("On dexp");
+}
+void on_yexp(char *yval)
+{
+    D && printf("On y%s:\n", yval);
+    D && printf("  On yval:%s tm_mon:%d tm_mday:%d\n",
+        yval,lc->tm_mon,lc->tm_mday);
+
+    // Read month and day values into mm and dd
+    char _mm[3] = "00"; _mm[0] = yval[0]; _mm[1] = yval[1];
+    char _dd[3] = "00"; _dd[0] = yval[2]; _dd[1] = yval[3];
+    int mm = atoi(_mm);
+    int dd = atoi(_dd);
+    D && printf("     mm:%d dd:%d\n", mm, dd);
+
+    int n1 = next_yday_days(mm,dd,lc);
+    int n2 = next_next_yday_days(mm,dd,lc);
+
+    reval(&next_dy[1], next_dy[0]);
+    reval(&next_dy[0], n1);
+    reval(&next_dy[1], n2);
+
+    status("On yexp");
+}
+
+
 
 // HELPER FUNCTIONS
 void say(char *str)                 // Debug-aware printf
