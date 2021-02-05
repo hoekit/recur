@@ -46,6 +46,7 @@ void on_hexp(int hval);
 void on_mexp(int mval);
 void on_uexp(int uval);
 void on_wexp(int wval);
+void _on_uexp_wexp(int val);
 void on_dexp(int dval);
 void on_yexp(char *yval);
 
@@ -221,35 +222,35 @@ void on_uexp(int uval)
 {
     D && printf("On u%d:\n", uval);
     int wday = uval == 7 ? 0 : uval;
-    D && printf("  Given wday:%d and lc->tm_wday:%d\n", wday, lc->tm_wday);
-    if (wday == lc->tm_wday) {
-        D && printf("  Today is the next occurrence\n");
-        reval(&next_dy[1], next_dy[0]);
-        reval(&next_dy[0], 0);
-    } else {
-        D && printf("  Next occurrence on day of week:%d\n", uval);
-        reval(&next_dy[1], next_dy[0]);
-        reval(&next_dy[0], (wday + 7 - lc->tm_wday) % 7);
-    }
-    reval(&next_dy[1], next_dy[0] + 7);
+    _on_uexp_wexp(wday);
     status("On uexp");
 }
 void on_wexp(int wval)
 {
     D && printf("On w%d:\n", wval);
     int wday = wval;
+    _on_uexp_wexp(wday);
+    status("On wexp");
+}
+void _on_uexp_wexp(int wday)
+{
     D && printf("  Given wday:%d and lc->tm_wday:%d\n", wday, lc->tm_wday);
     if (wday == lc->tm_wday) {
-        D && printf("  Today is the next occurrence\n");
-        reval(&next_dy[1], next_dy[0]);
-        reval(&next_dy[0], 0);
+        if  (next_tm[0] >= 0) {
+            D && printf("  Today can be the next occurrence\n");
+            reval(&next_dy[1], next_dy[0]);
+            reval(&next_dy[0], 0);
+        } else {
+            D && printf("  Today's not next occurrence. No suitable time.\n");
+            reval(&next_dy[1], next_dy[0]);
+            reval(&next_dy[0], 7);  // Set to same day next week
+        }
     } else {
-        D && printf("  Next occurrence on day of week:%d\n", wval);
+        D && printf("  Next occurrence on day of week:%d\n", wday);
         reval(&next_dy[1], next_dy[0]);
         reval(&next_dy[0], (wday + 7 - lc->tm_wday) % 7);
     }
     reval(&next_dy[1], next_dy[0] + 7);
-    status("On wexp");
 }
 void on_dexp(int dval)
 {

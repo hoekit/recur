@@ -1,19 +1,14 @@
-#include <stdio.h>          /* printf */
-#include <stdlib.h>         /* EXIT_SUCCESS */
+#include <stdio.h>
+#include <stdlib.h>
 #include "recur.h"
-
-// Usage:
-// main y0518 | perl -ae 'print "$_".localtime($_)."\n"'
-
-int D = 0;
 
 int main(int argc, char *argv[])
 {
 
-    D && printf("argc:%d\n",argc);
-    if (argc != 2) exit(EXIT_FAILURE);
-
-    D && printf("recur:%s\n",argv[1]);
+    /* Usage:
+     *   main y0131     # next recurrence of May 18 in unix epoch */
+    if (argc != 2)
+        exit(EXIT_FAILURE);
 
     printf("%ld\n",recur(argv[1]));
     exit(EXIT_SUCCESS);
