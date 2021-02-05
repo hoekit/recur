@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "recur.h"
 
+/* Example using recur(char *).
+ * Compare current date and recur output:
+ *   date && main H13M00u5 */
 int main(int argc, char *argv[])
 {
 
@@ -10,6 +14,11 @@ int main(int argc, char *argv[])
     if (argc != 2)
         exit(EXIT_FAILURE);
 
-    printf("%ld\n",recur(argv[1]));
+    time_t next = recur(argv[1]);
+    printf("%ld\n", next);
+
+    /* Comment out line below to return only the epoch */
+    printf("%s\n", ctime(&next));
+
     exit(EXIT_SUCCESS);
 }
