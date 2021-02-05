@@ -37,7 +37,13 @@ int reset_count = 0;
 typedef struct { int dy; int tm; } Next;
 Next next = { -1, -1 };
 
+// SYMBOL HANDLERS
+Next on_head_loops(int dy, int tm);
+Next on_tail_loops(int dy, int tm);
+Next on_loop();
+
 // HELPER FUNCTIONS
+void say(char *str);                // Debug-aware printf
 time_t dt_to_epoch(int dy, int tm); // Compute epoch of given dy and tm
 void reval(int *curr, int val);     // Re-evaluate *curr given val
 void reval_t(time_t *curr, time_t val);
@@ -60,11 +66,7 @@ void reset();                       // Reset helper structs
 %type <epoch> loops loop head tails tail
 
 %union{
-    int uval;
-    int wval;
-    int dval;
-    int hval;
-    int mval;
+    int uval, wval, dval, hval, mval;
     char *yval;
     struct epoch { int dy; int tm; } epoch;
 }
@@ -72,81 +74,24 @@ void reset();                       // Reset helper structs
 %%
 
 input:
-  head          { D && printf("input - head\n"); }
-| head tails    { D && printf("input - head tails\n"); }
+  head          { say("input: head\n"); }
+| head tails    { say("input: head tails\n"); }
 ;
 
 tails:
-  SEP tail       { D && printf("tails: SEP tail\n"); }
-| tails SEP tail { D && printf("tails: tails SEP tail\n"); }
+  SEP tail       { say("tails: SEP tail\n"); }
+| tails SEP tail { say("tails: tails SEP tail\n"); }
 ;
 
-head:
-  loops {
-    // head occurs only once
-    D && printf("head\n");
-
-    // Update next and recur_time
-    reval(&(next.dy),$1.dy); reval(&(next.tm),$1.tm);
-    recur_time = dt_to_epoch(next.dy,next.tm);
-
-    reset();
-  }
-;
-
-tail:
-  loops {
-    // tail occurs multiple times
-    D && printf("tail\n");
-
-    // Update next and recur_time
-    reval(&(next.dy),$1.dy); reval(&(next.tm),$1.tm);
-    recur_time = dt_to_epoch(next.dy,next.tm);
-
-    reset();
-  }
-;
+head: loops     { on_head_loops($1.dy, $1.tm); };
+tail: loops     { on_tail_loops($1.dy, $1.tm); };
 
 loops:
-  loop       { D && printf("loops - loop:1\n"); $$.dy = next.dy; $$.tm = next.tm; }
-| loops loop { D && printf("loops - loops loop:2\n"); $$.dy = next.dy; $$.tm = next.tm; }
+  loop          { say("loops: loop\n");       $$.dy = next.dy; $$.tm = next.tm; }
+| loops loop    { say("loops: loops loop\n"); $$.dy = next.dy; $$.tm = next.tm; }
 ;
 
-loop:
-  texps rexp {
-    // A loop is found here so update the next struct here
-
-    Next temp = { -1, -1 };
-
-    if (next_dy[0] == 0) {              // Next recurrence can be today
-
-        if (next_tm[0] == -1) {         // But no valid times
-            temp.dy = next_dy[1];       //   So use next, next recurrence
-            temp.tm = next_tm[1];       //     At earliest time
-
-        } else {                        // And a time for today exists
-            temp.dy = 0;                //   So today is next recurrence
-            temp.tm = next_tm[0];       //     At time for today
-        }
-
-    } else {                            // Recurrence tomorrow onwards
-        temp.dy = next_dy[0];           //   So use first recurrence
-        temp.tm = next_tm[1];           //     At earliest time for other days
-    }
-
-    D && printf("  temp.dy:%d temp.tm:%d\n", temp.dy, temp.tm);
-
-    if ((next.dy == -1)                 // Update if not initialized
-        || (temp.dy < next.dy)          //   or temp day is earlier
-        || ((temp.dy == next.dy)        //   or same day
-             && (temp.tm < next.tm))) { //      but temp time is earlier
-        next.dy = temp.dy;
-        next.tm = temp.tm;
-    }
-
-    status("On loop");
-  }
-;
+loop: texps rexp { on_loop(); } ;
 
 texps:
   %empty {
@@ -312,6 +257,71 @@ yexp:
 
 %%
 
+
+// SYMBOL HANDLERS
+Next on_head_loops(int dy, int tm)
+{
+    // head occurs only once
+    say("head\n");
+
+    // Update next and recur_time
+    reval(&(next.dy), dy);
+    reval(&(next.tm), tm);
+    recur_time = dt_to_epoch(next.dy,next.tm);
+
+    reset();
+}
+Next on_tail_loops(int dy, int tm)
+{
+    say("tail\n");      // tail occurs multiple times
+
+    // Update next and recur_time
+    reval(&(next.dy), dy);
+    reval(&(next.tm), tm);
+    recur_time = dt_to_epoch(next.dy,next.tm);
+
+    reset();
+}
+Next on_loop()
+{
+    // A loop is found here so update the next struct here
+
+    Next temp = { -1, -1 };
+
+    if (next_dy[0] == 0) {              // Next recurrence can be today
+
+        if (next_tm[0] == -1) {         // But no valid times
+            temp.dy = next_dy[1];       //   So use next, next recurrence
+            temp.tm = next_tm[1];       //     At earliest time
+
+        } else {                        // And a time for today exists
+            temp.dy = 0;                //   So today is next recurrence
+            temp.tm = next_tm[0];       //     At time for today
+        }
+
+    } else {                            // Recurrence tomorrow onwards
+        temp.dy = next_dy[0];           //   So use first recurrence
+        temp.tm = next_tm[1];           //     At earliest time for other days
+    }
+
+    D && printf("  temp.dy:%d temp.tm:%d\n", temp.dy, temp.tm);
+
+    if ((next.dy == -1)                 // Update if not initialized
+        || (temp.dy < next.dy)          //   or temp day is earlier
+        || ((temp.dy == next.dy)        //   or same day
+             && (temp.tm < next.tm))) { //      but temp time is earlier
+        next.dy = temp.dy;
+        next.tm = temp.tm;
+    }
+
+    status("On loop");
+}
+
+// HELPER FUNCTIONS
+void say(char *str)                 // Debug-aware printf
+{
+    D && printf("%s",str);
+}
 int yyerror(char *s)
 {
     D && printf("Syntax Error on line %s\n", s);
