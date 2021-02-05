@@ -3,7 +3,7 @@
 #include "recur.h"
 
 // Usage:
-// main y0518 | perl -ae 'print localtime($_)."\n"'
+// main y0518 | perl -ae 'print "$_".localtime($_)."\n"'
 
 int D = 0;
 

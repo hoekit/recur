@@ -11,7 +11,7 @@ int yylex();
 int yyerror(char *s);
 
 time_t current_time;
-time_t recur_time;
+time_t recur_time = -1;
 struct tm lc[1];     // local time
 
 int next_hh[3] = {-1,-1,-1};
@@ -32,13 +32,18 @@ int next_dy[2] =
     -1,     // Days to next recurrence. If today, 0. Valid: -1, 0-366
     -1      // Days to next, next recurrence.        Valid: -1, 1-731
 };
+int reset_count = 0;
 
 typedef struct { int dy; int tm; } Next;
+Next head = { -1, -1 };
+Next tail = { -1, -1 };
 Next next = { -1, -1 };
 
 // HELPER FUNCTIONS
 time_t dt_to_epoch(int dy, int tm); // Compute epoch of given dy and tm
 void reval(int *curr, int val);     // Re-evaluate *curr given val
+void reval_t(time_t *curr, time_t val);
+                                    // Re-evaluate *curr given val
 void upd_next_tm(int tval);         // Update next_tm given tval
 void status(char *msg);
 void iter_upd_next_tm();            // Generate possible tval and
@@ -53,7 +58,7 @@ void reset();                       // Reset helper structs
 %type <hval> HVAL
 %type <mval> MVAL
 %type <yval> YVAL
-%type <epoch> loops loop
+%type <epoch> loops loop head tails tail
 
 %union{
     int uval;
@@ -67,15 +72,54 @@ void reset();                       // Reset helper structs
 %%
 
 input:
+  head {
+    D && printf("input - head\n");
+    recur_time = dt_to_epoch(head.dy,head.tm);
+  }
+| head tails {
+    D && printf("input - head tails\n");
+    // Reval head, given values in tail
+    reval(&head.dy,tail.dy); reval(&head.tm,tail.tm);
+    // Update recur_time
+    recur_time = dt_to_epoch(head.dy,head.tm);
+  }
+;
+
+tails:
+  SEP tail       { D && printf("tails: SEP tail\n"); }
+| tails SEP tail { D && printf("tails: tails SEP tail\n"); }
+;
+
+head:
   loops {
-        recur_time = dt_to_epoch($1.dy,$1.tm);
-    }
+    // head occurs only once
+    D && printf("head\n");
+
+    // Store values into head
+    reval(&(head.dy),$1.dy); reval(&(head.tm),$1.tm);
+
+    // time_t temp = dt_to_epoch($1.dy,$1.tm);
+    // D && printf("head - loops: %ld\n",temp);
+    // $$.dy = next.dy; $$.tm = next.tm;
+    reset();
+  }
+;
+
+tail:
+  loops {
+    // tail occurs multiple times
+    D && printf("tail\n");
+
+    // Store values into tail
+    reval(&(tail.dy),$1.dy); reval(&(tail.tm),$1.tm);
+
+    reset();
+  }
 ;
 
 loops:
-  loop           { D && printf("loops:1\n"); $$.dy = next.dy; $$.tm = next.tm; }
-| loop loops     { D && printf("loops:2\n"); $$.dy = next.dy; $$.tm = next.tm; }
-| loop SEP loops { D && printf("loops:3\n"); $$.dy = next.dy; $$.tm = next.tm; }
+  loop       { D && printf("loops - loop:1\n"); $$.dy = next.dy; $$.tm = next.tm; }
+| loops loop { D && printf("loops - loops loop:2\n"); $$.dy = next.dy; $$.tm = next.tm; }
 ;
 
 loop:
@@ -110,8 +154,6 @@ loop:
         next.tm = temp.tm;
     }
 
-    reset();
-
     status("On loop");
   }
 ;
@@ -119,8 +161,12 @@ loop:
 texps:
   %empty {
     D && printf("On empty texps:\n");
-    D && printf("  Default to 6am.\n");
-    upd_next_tm(6*60*60);
+    if ((next_tm[0] == -1) && (next_tm[1] == -1)) {
+        D && printf("  Default to 6am.\n");
+        upd_next_tm(6*60*60);
+    } else {
+        D && printf("  Don't default to 6am. next_tm has values.\n");
+    }
     status("On texps \%empty");
   }
 | hexps {
@@ -281,6 +327,11 @@ void reval(int *curr, int val)      // Re-evaluate *curr given val
     if ((*curr == -1) || (val < *curr))
         *curr = val;
 }
+void reval_t(time_t *curr, time_t val)      // Re-evaluate *curr given val
+{
+    if ((*curr == -1) || (val < *curr))
+        *curr = val;
+}
 void upd_next_tm(int tval)          // Update next_tm given tval
 {
     // curr_tm is elapsed time since midnight of current day in seconds
@@ -314,6 +365,8 @@ void iter_upd_next_tm()             // Generate possible tval and
 }
 void reset()                        // Reset helper structs
 {
+    reset_count++;
+    D && printf("-- RESET: %d --\n",reset_count);
     next_hh[0] = next_hh[1] = next_hh[2] = -1;
     next_mm[0] = next_mm[1] = -1;
     next_tm[0] = next_tm[1] = -1;
@@ -328,6 +381,9 @@ void status(char *msg)
     printf("  next_tm: [ %d %d ]\n",    next_tm[0], next_tm[1]);
     printf("  next_dy: [ %d %d ]\n",    next_dy[0], next_dy[1]);
     printf("  next   : [ %d %d ]\n",    next.dy,    next.tm);
+    printf("  head   : [ %d %d ]\n",    head.dy,    head.tm);
+    printf("  tail   : [ %d %d ]\n",    tail.dy,    tail.tm);
+    printf("  recur_time: %ld\n",       recur_time);
     printf("\n");
 }
 
@@ -337,7 +393,13 @@ extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
 time_t recur(char *str)
 {
-     D && printf("\n");
+    reset();
+    head.dy = head.tm = -1;
+    tail.dy = tail.tm = -1;
+    recur_time = next.dy = next.tm = -1;
+    status("At Start");
+
+    D && printf("\n");
 
     // current_time = (time_t)1611380990;  // Mock Sat Jan 23 12:49:39 2021
     current_time = time(NULL);

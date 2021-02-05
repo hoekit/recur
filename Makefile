@@ -32,8 +32,8 @@ lib/libhelpers.a: $(helperfiles)
 src/%.o: src/%.c
 	cd src && gcc -I.. -L../lib -lbase -c ../$^ -o ../$@
 
-test: t/10_helpers.c ${INCL} ${LIBS}
-	cd t && gcc -o t_helper 10_helpers.c -I.. -L../lib -lhelpers -lbase
+test: t/10_helpers.c ${INCL} ${LIBS} lib/librecur.a
+	cd t && gcc -o t_helper 10_helpers.c -I.. -L../lib -lrecur -lhelpers
 	t/t_helper
 
 clean:

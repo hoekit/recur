@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include "_private.h"
+#include "recur.h"
 
 typedef struct {
     char name[10];
@@ -106,7 +107,14 @@ void check_eoy_days(int yy, int mm, int dd, int val)
     sprintf(tmsg,"eoy_days(%04d,%02d,%02d) == %3d",yy,mm,dd,val);
     is(tgot,texp,tmsg);
 }
-void status()
+void check_recur(char *expr, time_t val)
+{
+    sprintf(tgot,"%ld", recur(expr));
+    sprintf(texp,"%ld", val);
+    sprintf(tmsg,"recur(%s) == %ld",expr,val);
+    is(tgot,texp,tmsg);
+}
+void t_status()
 {
     if (num_errors)
         printf("\nFound errors: %d of %d\n", num_errors, num_tests);
@@ -117,6 +125,12 @@ void status()
 int main(void)
 {
     is("ok","ok","is()");
+    // exit(EXIT_SUCCESS);
+
+    printf("\n recur()\n");
+    check_recur("H10M15y0315",1615778100);
+    check_recur("H10M15y0518,y0315", 1615762800);
+    check_recur("H10M15y0518y0315",1615778100);
     // exit(EXIT_SUCCESS);
 
     printf("\n ydays_of()\n");
@@ -171,7 +185,7 @@ int main(void)
     check_leap_year(1800,  0);
     check_leap_year(2000,  1);
 
-    status();
+    t_status();
     exit(EXIT_SUCCESS);
 }
 
