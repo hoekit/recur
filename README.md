@@ -38,13 +38,13 @@ Several occurrences can be defined:
 
     {
       task : "Replace water in potted plants",
-      recur: "H06w2w4w6"            # At 10am every Tue, Thu and Sat
+      recur: "H10w2w4w6"            # At 10am every Tue, Thu and Sat
     }
 
 Monthly events. If a time is not specified, defaults to 6am:
 
     {
-      task : "Pay monthly bills",
+      task : "Pay monthly bills",   # Every 25th of the month
       recur: "d25"                  # Equivalent to "H06d25"
     }
 
@@ -59,17 +59,20 @@ Recurrences can also be linearly combined:
 
     {
       task : "Weekly meetings",
-      recur: "H10w1,H17w5"          # 10am on Mon and 5pm on Fri
+      recur: "H10w1,H17w5"          # 10am on Mondays and 5pm on Fridays
     }
 
 
 ## Building the library
 
-Running "make" will create "main", a sample executable to try out the
-various recurring events.
+Running "make" will create a sample executable called "main" to try out
+the various recurring events.
+
+    $ make
+    $ ./main "H10w1,H17w5"
 
 See the Makefile for other targets. In particular, the "lib/librecur.a"
-creates a static library suitable to for linking.
+creates a static library suitable for linking with your own project.
 
 
 ## Using the library
