@@ -146,15 +146,15 @@ int main(void)
     // exit(EXIT_SUCCESS);
 
     printf("\n next_yday_days()\n");
-    check_next_yday_days(1,1,330);
-    check_next_yday_days(2,5,0);
-    check_next_yday_days(2,4,364);
+    check_next_yday_days(1,1,329);
+    check_next_yday_days(2,6,0);
+    check_next_yday_days(2,5,364);
     // exit(EXIT_SUCCESS);
 
     printf("\n next_next_yday_days()\n");
-    check_next_next_yday_days(1,1,330+365);
-    check_next_next_yday_days(2,5,0+365);
-    check_next_next_yday_days(2,4,364+365);
+    check_next_next_yday_days(1,1,329+365);
+    check_next_next_yday_days(2,6,0+365);
+    check_next_next_yday_days(2,5,364+365);
     // exit(EXIT_SUCCESS);
 
     printf("\n recur()\n");

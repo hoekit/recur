@@ -5,9 +5,10 @@
 
 #include <time.h>
 
-enum {                              // Global Flags
-    D = 0                           //   1: Show debugging messages
-};
+#ifndef D
+#define D 0
+#endif
+
 
 int shift(char *str, char *res);
 

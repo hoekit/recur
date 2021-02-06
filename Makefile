@@ -10,12 +10,12 @@ XFILES = recur.tab.o lex.yy.o src/shift-one-char.o \
 lib/librecur.a: ${XFILES}
 	ar rs lib/librecur.a ${XFILES}
 
-recur.tab.o: ${LIBS} ${INCL} recur.l recur.y
+recur.tab.o: ${LIBS} ${INCL} recur.l recur.y recur.c
 	flex -l recur.l
 	bison -dv recur.y
 	gcc -c recur.tab.c -Llib -lhelpers -lbase
 
-lex.yy.o: ${LIBS} ${INCL} recur.l recur.y
+lex.yy.o: ${LIBS} ${INCL} recur.l recur.y recur.c
 	flex -l recur.l
 	bison -dv recur.y
 	gcc -c lex.yy.c -Llib -lhelpers -lbase
